@@ -219,6 +219,87 @@ table.sched tr.click:hover td { background: var(--panel-2); }
 .hc-passed { margin: 6px 0 0; padding-left: 18px; color: var(--ink-2); }
 .hc-back { margin-bottom: 8px; }
 
+/* clash coordinator */
+.cl-top { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.cl-tabs { display: flex; gap: 2px; background: var(--panel-2); border-radius: 6px; padding: 2px; margin-right: auto; }
+.cl-tabs button { border: 0; background: none; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-weight: 500; color: var(--ink-2); }
+.cl-tabs button[aria-selected="true"] { background: var(--panel); color: var(--ink); box-shadow: 0 1px 2px rgb(0 0 0 / .12); }
+.cl-tabs button:disabled { opacity: .4; cursor: default; }
+.cl-tabs b { font-family: var(--font-mono); font-size: 11px; background: #e5533d; color: #fff; border-radius: 999px; padding: 0 6px; margin-left: 4px; }
+.cl-label { display: block; font: 600 12px var(--font-display); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); margin: 12px 0 5px; }
+.cl-set { border: 1px solid var(--line); border-radius: 6px; padding: 10px; display: grid; gap: 8px; margin-top: 12px; background: var(--panel); }
+.cl-set-head { display: flex; align-items: center; gap: 8px; }
+.cl-count { font-family: var(--font-mono); font-size: 11px; color: var(--ink-2); margin-left: auto; }
+.cl-set select, .cl-listhead select, #clStatus { height: 28px; border: 1px solid var(--line); border-radius: 5px; background: var(--panel-2); padding: 0 6px; min-width: 0; }
+.cl-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.cl-chips .chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.cl-chips .chip[aria-pressed="false"] { opacity: 1; text-decoration: none; }
+.cl-badge { font: 700 11px var(--font-mono); color: #fff; width: 20px; height: 20px; border-radius: 4px; display: inline-grid; place-items: center; flex: none; }
+.cl-a { background: #e5533d; }
+.cl-b { background: #2f7fd8; }
+.cl-swap { margin: 6px auto -6px; display: flex; }
+.cl-type { display: flex; width: 100%; }
+.cl-type .btn { flex: 1; justify-content: center; }
+.cl-num { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.cl-num label { color: var(--ink-2); }
+.cl-num input { width: 72px; height: 28px; border: 1px solid var(--line); border-radius: 5px; background: var(--panel-2); padding: 0 8px; font-family: var(--font-mono); }
+.cl-check { display: flex; gap: 8px; align-items: flex-start; margin-top: 8px; color: var(--ink-2); line-height: 1.35; }
+.cl-check input { accent-color: var(--accent); margin-top: 2px; }
+.cl-run { width: 100%; justify-content: center; margin-top: 14px; height: 36px; font-weight: 600; }
+.cl-note { font-size: 12px; margin: 8px 0 0; line-height: 1.4; }
+.cl-running { display: grid; gap: 10px; padding-block: 18px; }
+.cl-running p { margin: 0; font-family: var(--font-mono); font-size: 12px; color: var(--ink-2); }
+.cl-bar { height: 6px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.cl-bar i { display: block; height: 100%; background: linear-gradient(90deg, #e5533d, #2f7fd8); transition: width .2s; }
+.cl-kpi { display: flex; align-items: flex-end; gap: 12px; }
+.cl-kpi > div:first-child { display: grid; }
+.cl-kpi b { font: 700 40px/0.9 var(--font-display); font-variant-numeric: tabular-nums; }
+.cl-kpi span { color: var(--ink-2); font-size: 12px; }
+.cl-meta { margin-left: auto; text-align: right; font-size: 11px; color: var(--ink-2); line-height: 1.45; font-family: var(--font-mono); }
+.cl-stack { display: flex; height: 6px; border-radius: 999px; overflow: hidden; margin: 10px 0; background: var(--line); gap: 2px; }
+.cl-filters { display: flex; flex-wrap: wrap; gap: 4px; }
+.cl-pill { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 2px 9px; font-size: 12px; cursor: pointer; }
+.cl-pill i { width: 7px; height: 7px; border-radius: 50%; }
+.cl-pill b { font-family: var(--font-mono); font-weight: 500; color: var(--ink-2); }
+.cl-pill[aria-pressed="true"] { border-color: var(--ink); background: var(--panel-2); }
+.cl-pill:disabled { opacity: .4; cursor: default; }
+.cl-card { margin-top: 12px; border: 1px solid var(--line); border-radius: 8px; padding: 10px; display: grid; gap: 8px; background: var(--panel); box-shadow: 0 6px 20px rgb(0 0 0 / .06); }
+.cl-card-head { display: flex; align-items: center; gap: 8px; }
+.cl-id { font: 700 22px/1 var(--font-display); letter-spacing: .02em; }
+#clStatus { border-left: 4px solid var(--pin); font-weight: 600; }
+.cl-nav { margin-left: auto; display: flex; align-items: center; gap: 2px; font-family: var(--font-mono); font-size: 11px; color: var(--ink-2); }
+.cl-nav .eye { font-size: 18px; width: 26px; height: 26px; }
+.cl-el { display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); background: var(--panel-2); border-radius: 6px; padding: 6px 8px; text-align: left; cursor: pointer; min-width: 0; }
+.cl-el:hover { border-color: var(--ink-2); }
+.cl-el-txt { display: grid; min-width: 0; }
+.cl-el-txt b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+.cl-el-txt span { font-family: var(--font-mono); font-size: 11px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cl-facts { display: grid; grid-template-columns: repeat(3, auto); gap: 0 12px; margin: 0; }
+.cl-facts dt { grid-row: 1; font: 600 10px var(--font-display); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+.cl-facts dd { grid-row: 2; margin: 0; font-family: var(--font-mono); font-size: 12px; }
+#clName { width: 100%; box-sizing: border-box; }
+.cl-card textarea { box-sizing: border-box; width: 100%; border: 1px solid var(--line); border-radius: 5px; background: var(--panel-2); padding: 6px 8px; resize: vertical; font: inherit; }
+.cl-listhead { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px; }
+.cl-listhead .cl-label { margin: 0; }
+.cl-list { display: grid; margin-top: 6px; }
+.cl-group { display: flex; justify-content: space-between; font: 600 12px var(--font-display); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); padding: 8px 6px 3px; border-bottom: 1px solid var(--line); }
+.cl-group b { font-family: var(--font-mono); font-weight: 500; }
+.cl-row { display: flex; align-items: center; gap: 8px; border: 0; background: none; padding: 6px; border-radius: 4px; cursor: pointer; text-align: left; min-width: 0; }
+.cl-row:hover { background: var(--panel-2); }
+.cl-row.on { background: var(--accent-soft); }
+.cl-row i { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.cl-rid { font: 600 12px var(--font-mono); flex: none; }
+.cl-rname { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink-2); font-size: 12px; }
+.cl-rname em { font-style: normal; color: var(--ink); }
+.cl-rd { font-family: var(--font-mono); font-size: 11px; color: var(--ink-2); flex: none; }
+.cl-export { display: flex; gap: 6px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); flex-wrap: wrap; }
+.clash-pin { pointer-events: auto; --pin: #e5533d; display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; border: 2px solid #fff; background: var(--pin); box-shadow: 0 0 0 1px rgb(0 0 0 / .25), 0 2px 6px rgb(0 0 0 / .3); cursor: pointer; padding: 0; position: relative; }
+.clash-pin span { position: absolute; left: 22px; top: 50%; transform: translateY(-50%); font: 600 11px var(--font-mono); color: #fff; background: rgb(20 26 23 / .85); padding: 1px 6px; border-radius: 3px; white-space: nowrap; opacity: 0; transition: opacity .15s; pointer-events: none; }
+.clash-pin:hover span, .clash-pin.on span { opacity: 1; }
+.clash-pin.on { width: 22px; height: 22px; box-shadow: 0 0 0 1px rgb(0 0 0 / .3), 0 0 0 7px color-mix(in srgb, var(--pin) 30%, transparent); }
+@media (prefers-reduced-motion: no-preference) { .clash-pin.on { animation: pinPulse 1.6s ease-out infinite; } }
+@keyframes pinPulse { 0% { box-shadow: 0 0 0 1px rgb(0 0 0 / .3), 0 0 0 0 color-mix(in srgb, var(--pin) 55%, transparent); } 100% { box-shadow: 0 0 0 1px rgb(0 0 0 / .3), 0 0 0 14px transparent; } }
+
 /* status bar */
 .status { display: flex; gap: 16px; padding-block: 7px; font-size: 12px; color: var(--ink-2); min-width: 0; }
 .status span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -262,6 +343,9 @@ table.sched tr.click:hover td { background: var(--panel-2); }
     </button>
     <button class="btn primary" id="btnAppend" title="Add .ifc files to the current model (or drop them on the viewport)">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 3v10M3 8h10"/></svg><span class="label-txt">Add IFC</span>
+    </button>
+    <button class="btn" id="btnClash" aria-pressed="false" title="Find clashes between elements and files">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1.5" y="5" width="8" height="8" rx="1"/><rect x="6.5" y="2" width="8" height="8" rx="1"/><path d="M6.5 5h3v5h-3z" fill="currentColor" stroke="none" opacity=".55"/></svg><span class="label-txt">Clashes</span>
     </button>
     <button class="btn" id="btnCheck" title="Check the model for common IFC problems">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 1.5 2.5 4v4c0 3.2 2.4 5.6 5.5 6.5 3.1-.9 5.5-3.3 5.5-6.5V4z"/><path d="m5.5 8 1.8 1.8L10.8 6"/></svg><span class="label-txt">Check model</span>
@@ -350,7 +434,8 @@ table.sched tr.click:hover td { background: var(--panel-2); }
 <script type="importmap">
 { "imports": {
   "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
-  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
+  "three-mesh-bvh": "https://cdn.jsdelivr.net/npm/three-mesh-bvh@0.8.3/build/index.module.js"
 } }
 </script>
 <script type="module">
@@ -917,6 +1002,7 @@ function finishLoad() {
 // Rebuild everything that depends on which files and elements are loaded.
 function refreshModel(fit) {
   state.check = null;
+  resetClashes();
   const files = liveFiles();
   const title = files.length > 1 ? `${files[0].name} + ${files.length - 1} more` : files[0].name;
   $('#modelName').textContent = title;
@@ -952,9 +1038,12 @@ function applyLook() {
   for (const el of M.elements) {
     for (const mesh of el.meshes) {
       let m = mesh.userData.base;
+      const cf = state.clashFocus;
       if (el === state.selected) m = selMat;
+      else if (cf && el === cf.a) m = clashMatA;
+      else if (cf && el === cf.b) m = clashMatB;
       else if (el === state.hover && !state.measure) m = hoverMat;
-      else if (state.xray) m = xrayMat;
+      else if (state.xray || cf) m = xrayMat;
       else if (state.tintFiles && m.opacity >= 1) m = mat(M.files[el.file].color);
       mesh.material = m;
     }
@@ -973,7 +1062,7 @@ function updateLabels() {
   for (const el of M.elements) {
     if (!el.label) continue;
     el.label.getWorldPosition(p);
-    let show = state.labels && isShown(el) && planes.every((pl) => pl.distanceToPoint(p.clone().setY(p.y - 0.6)) >= 0);
+    let show = state.labels && !state.clashFocus && isShown(el) && planes.every((pl) => pl.distanceToPoint(p.clone().setY(p.y - 0.6)) >= 0);
     if (show && !state.xray) {
       const dist = camera.position.distanceTo(p);
       occRay.set(camera.position, dir.subVectors(p, camera.position).normalize());
@@ -1153,10 +1242,10 @@ function addPlane(d, s, name, anchor) {
   syncCuts(true);
   return cut;
 }
-function addBox(box) {
+function addBox(box, name = 'Section box') {
   removeCut(cuts.find((c) => c.kind === 'box'));
   box = box || M.box.clone().expandByScalar(0.1);
-  const cut = { id: ++cutSeq, kind: 'box', name: 'Section box', on: true };
+  const cut = { id: ++cutSeq, kind: 'box', name, on: true };
   cut.faces = [
     makeFace(cut, AXES.x, box.max.x), makeFace(cut, AXES.x.clone().negate(), -box.min.x),
     makeFace(cut, AXES.y, box.max.y), makeFace(cut, AXES.y.clone().negate(), -box.min.y),
@@ -1195,7 +1284,7 @@ function syncCuts(rebuildList) {
       f.plane.constant = f.s;
       if (cut.on) clipPlanes.push(f.plane);
     }
-    const show = cut.on && state.gizmos;
+    const show = cut.on && state.gizmos && cut.name !== 'Clash box';
     const center = cut.kind === 'box' ? boxOf(cut).getCenter(new THREE.Vector3()) : modelCenter();
     for (const f of cut.faces) {
       const at = center.clone().addScaledVector(f.d, f.s - f.d.dot(center));
@@ -1654,6 +1743,7 @@ function renderProps() {
   const box = $('#props');
   const el = state.selected;
   if (!M) { box.innerHTML = ''; return; }
+  if (!el && clash.open) return renderClash(box);
   if (!el && state.check && state.showCheck) return renderCheck(box);
   if (!el) {
     $('#propsTitle').textContent = 'Model summary';
@@ -1673,7 +1763,8 @@ function renderProps() {
   }
   $('#propsTitle').textContent = 'Properties';
   const s = M.storeys[el.storey];
-  const back = state.check && state.showCheck ? '<button class="btn small hc-back" id="hcBack">← Back to model check</button>' : '';
+  const back = clash.open ? '<button class="btn small hc-back" id="hcBack">← Back to clashes</button>'
+    : state.check && state.showCheck ? '<button class="btn small hc-back" id="hcBack">← Back to model check</button>' : '';
   const head = back + `<div class="prop-head"><span class="cls-badge">${esc(el.ifcClass)}</span><h2>${esc(el.name)}</h2></div>
     <div class="guid"><span>GlobalId ${esc(el.guid || '—')}</span>${el.guid ? '<button class="btn small" id="copyGuid">Copy</button>' : ''}</div>
     <div class="actions">
@@ -2065,6 +2156,7 @@ const CHECKS = [
 ];
 
 async function runModelCheck() {
+  if (clash.open) closeClash();
   const rows = await collectReport();
   const boxes = new Map(rows.map((r) => [r.el, new THREE.Box3().setFromObject(r.el.object)]));
   const ctx = { rows, boxes };
@@ -2147,6 +2239,671 @@ async function exportCheckCsv() {
 }
 $('#btnCheck').addEventListener('click', async () => {
   try { await runModelCheck(); } catch (err) { console.error(err); hideBusy(); toast(`The check failed: ${err.message || err}`, true); }
+});
+
+/* ---------- clash coordinator ---------- */
+// Broad phase: sweep-and-prune over element bounding boxes. Narrow phase: exact triangle tests with
+// three-mesh-bvh, plus a ray-parity test for elements buried entirely inside another one.
+const CLASH_STATUS = [
+  { id: 'New', color: '#e5533d' },
+  { id: 'Active', color: '#e3a33a' },
+  { id: 'Reviewed', color: '#3f7fbf' },
+  { id: 'Approved', color: '#8a63c9' },
+  { id: 'Resolved', color: '#2f8a4e' },
+];
+const statusColor = (s) => CLASH_STATUS.find((x) => x.id === s)?.color || '#888';
+const NO_CLASH = new Set([...NON_PHYSICAL, 'IfcSpace']);
+const clashMatA = new THREE.MeshStandardMaterial({ color: 0xe5533d, emissive: 0xe5533d, emissiveIntensity: 0.25, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1, clippingPlanes: clipPlanes });
+const clashMatB = new THREE.MeshStandardMaterial({ color: 0x2f7fd8, emissive: 0x2f7fd8, emissiveIntensity: 0.25, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1, clippingPlanes: clipPlanes });
+withCaps(clashMatA); withCaps(clashMatB);
+
+const clash = {
+  open: false, tab: 'rules', running: false, cancel: false, progress: 0, progressText: '',
+  cfg: null, test: null, focus: null, filter: 'All', group: 'pair', boxView: true, pins: new THREE.Group(),
+};
+scene.add(clash.pins);
+const geoCache = new Map(); // element -> world-space indexed geometry with a BVH
+
+function defaultClashCfg() {
+  const files = liveFiles();
+  return {
+    name: `Clash test ${clash.test ? (clash.test.run || 1) + 1 : 1}`,
+    a: { file: 'all', classes: new Set() },
+    b: { file: files.length > 1 ? String(files[1].index) : 'all', classes: new Set() },
+    type: 'hard', tolerance: 10, clearance: 50, skipSameFile: false, skipSameClass: false,
+  };
+}
+function clashSet(sel) {
+  return M.elements.filter((e) => !M.files[e.file].removed && !NO_CLASH.has(e.ifcClass)
+    && (sel.file === 'all' || e.file === +sel.file) && (!sel.classes.size || sel.classes.has(e.ifcClass)));
+}
+function worldGeometry(el, MeshBVH) {
+  if (geoCache.has(el)) return geoCache.get(el);
+  const pos = [], idx = [];
+  const v = new THREE.Vector3();
+  for (const mesh of el.meshes) {
+    const g = mesh.geometry, p = g.getAttribute('position');
+    if (!p) continue;
+    const base = pos.length / 3;
+    for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i).applyMatrix4(mesh.matrixWorld); pos.push(v.x, v.y, v.z); }
+    const ix = g.getIndex();
+    if (ix) for (let i = 0; i < ix.count; i++) idx.push(base + ix.getX(i));
+    else for (let i = 0; i < p.count; i++) idx.push(base + i);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.setIndex(idx);
+  geo.boundsTree = idx.length ? new MeshBVH(geo) : null;
+  geoCache.set(el, geo);
+  return geo;
+}
+const ID = new THREE.Matrix4();
+// Pulls every face of an element's box in by `tol`, so faces that only touch (a window in its opening,
+// a wall butting another) stop intersecting while real penetrations deeper than `tol` still do.
+function shrinkMatrix(box, tol) {
+  const c = box.getCenter(new THREE.Vector3()), s = box.getSize(new THREE.Vector3());
+  const k = (len) => Math.max(0.02, (len - 2 * tol) / Math.max(len, 1e-9));
+  return new THREE.Matrix4().makeTranslation(c.x, c.y, c.z)
+    .multiply(new THREE.Matrix4().makeScale(k(s.x), k(s.y), k(s.z)))
+    .multiply(new THREE.Matrix4().makeTranslation(-c.x, -c.y, -c.z));
+}
+// Is all of `inner` inside the closed solid `outer`? Count crossings of a ray from one of its vertices.
+// Sample points are nudged into the inner element so a vertex lying on the outer surface (a frame in its
+// opening) cannot flip the crossing count.
+function containedIn(inner, outer, boxIn, boxOut, tol) {
+  if (!outer.boundsTree || !boxOut.containsBox(boxIn)) return false;
+  const p = inner.getAttribute('position');
+  if (!p || !p.count) return false;
+  const c = boxIn.getCenter(new THREE.Vector3());
+  const dir = new THREE.Vector3(0.5774, 0.5771, 0.5777).normalize();
+  for (const i of [0, Math.floor(p.count / 2), p.count - 1]) {
+    const o = new THREE.Vector3().fromBufferAttribute(p, i);
+    const step = c.clone().sub(o);
+    o.addScaledVector(step.normalize(), Math.min(tol + 0.002, o.distanceTo(c)));
+    if (outer.boundsTree.raycast(new THREE.Ray(o, dir), THREE.DoubleSide).length % 2 === 0) return false;
+  }
+  return true;
+}
+
+async function runClashTest() {
+  const cfg = clash.cfg;
+  if (clash.running) return;
+  if (state.explode) { state.explode = 0; $('#explode').value = 0; applyExplode(); }
+  const A = clashSet(cfg.a), B = clashSet(cfg.b);
+  if (!A.length || !B.length) return toast('Selection A or B has no elements. Choose other files or classes.', true);
+  clash.running = true; clash.cancel = false; clash.progress = 0; clash.progressText = 'Loading the clash engine…';
+  renderProps();
+  const t0 = performance.now();
+  try {
+    const { MeshBVH } = await import('three-mesh-bvh');
+    M.root.updateMatrixWorld(true);
+    const inA = new Set(A), inB = new Set(B);
+    const items = [...new Set([...A, ...B])].map((el) => ({ el, box: new THREE.Box3().setFromObject(el.object) })).filter((it) => !it.box.isEmpty());
+    const margin = cfg.type === 'clearance' ? cfg.clearance / 1000 : 0;
+    const tol = cfg.type === 'hard' ? cfg.tolerance / 1000 : 0;
+    // broad phase
+    items.sort((p, q) => p.box.min.x - q.box.min.x);
+    const pairs = [], active = [], seen = new Set();
+    for (const it of items) {
+      for (let k = active.length - 1; k >= 0; k--) if (active[k].box.max.x + margin < it.box.min.x) active.splice(k, 1);
+      for (const other of active) {
+        const a = it.el, b = other.el;
+        const ab = inA.has(a) && inB.has(b), ba = inA.has(b) && inB.has(a);
+        if (!ab && !ba) continue;
+        if (cfg.skipSameFile && a.file === b.file) continue;
+        if (cfg.skipSameClass && a.ifcClass === b.ifcClass) continue;
+        const bx = it.box, by = other.box;
+        const ox = Math.min(bx.max.x, by.max.x) - Math.max(bx.min.x, by.min.x);
+        const oy = Math.min(bx.max.y, by.max.y) - Math.max(bx.min.y, by.min.y);
+        const oz = Math.min(bx.max.z, by.max.z) - Math.max(bx.min.z, by.min.z);
+        if (cfg.type === 'hard' ? Math.min(ox, oy, oz) <= tol : Math.min(ox, oy, oz) < -margin) continue;
+        const key = a.uid < b.uid ? `${a.uid}|${b.uid}` : `${b.uid}|${a.uid}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        pairs.push(ab ? [it, other] : [other, it]);
+      }
+      active.push(it);
+    }
+    // narrow phase, in slices so the page stays responsive
+    const found = [];
+    const t1 = {}, t2 = {};
+    for (let i = 0; i < pairs.length; i++) {
+      if (clash.cancel) break;
+      const [pa, pb] = pairs[i];
+      const ga = worldGeometry(pa.el, MeshBVH), gb = worldGeometry(pb.el, MeshBVH);
+      if (ga.boundsTree && gb.boundsTree) {
+        const inter = pa.box.clone().intersect(pb.box);
+        const s = inter.isEmpty() ? new THREE.Vector3() : inter.getSize(new THREE.Vector3());
+        const depth = Math.max(0, Math.min(s.x, s.y, s.z));
+        const shrink = Math.max(tol, 0.001);
+        const hard = depth > tol && (gb.boundsTree.intersectsGeometry(ga, shrinkMatrix(pa.box, shrink)) || containedIn(ga, gb, pa.box, pb.box, shrink) || containedIn(gb, ga, pb.box, pa.box, shrink));
+        if (hard) {
+          found.push({ a: pa.el, b: pb.el, kind: 'Hard', dist: depth, point: inter.getCenter(new THREE.Vector3()), zone: inter.clone() });
+        } else if (cfg.type === 'clearance') {
+          const r = ga.boundsTree.closestPointToGeometry(gb, ID, t1, t2, 0, margin);
+          if (r && r.distance < margin) {
+            found.push({ a: pa.el, b: pb.el, kind: r.distance < 1e-4 ? 'Touching' : 'Clearance', dist: r.distance, point: t1.point.clone().add(t2.point).multiplyScalar(0.5), zone: new THREE.Box3().setFromPoints([t1.point, t2.point]) });
+          }
+        }
+      }
+      if (i % 30 === 29) {
+        clash.progress = (i + 1) / pairs.length;
+        clash.progressText = `Checking ${(i + 1).toLocaleString()} of ${pairs.length.toLocaleString()} close pairs · ${found.length} clashes so far`;
+        updateClashProgress();
+        await nextFrame();
+      }
+    }
+    if (clash.cancel) { toast('Clash test cancelled.'); return; }
+    // keep statuses and comments from the previous run; clashes that disappeared become Resolved
+    const prev = new Map((clash.test?.results || []).map((c) => [c.key, c]));
+    const results = [];
+    let seq = clash.test?.seq || 0;
+    const now = new Date();
+    for (const f of found.sort((p, q) => q.dist - p.dist)) {
+      const key = pairKey(f.a, f.b);
+      const old = prev.get(key);
+      prev.delete(key);
+      const c = old ? Object.assign(old, f, { status: old.status === 'Resolved' ? 'Active' : old.status }) : { ...f, key, id: `C-${String(++seq).padStart(3, '0')}`, status: 'New', comment: '', foundAt: now };
+      c.storey = M.storeys[c.a.storey].name;
+      results.push(c);
+    }
+    for (const gone of prev.values()) if (M.byUid.has(gone.a.uid) && M.byUid.has(gone.b.uid)) { gone.status = 'Resolved'; results.push(gone); }
+    clash.test = {
+      name: cfg.name, cfg: { ...cfg, a: { ...cfg.a, classes: new Set(cfg.a.classes) }, b: { ...cfg.b, classes: new Set(cfg.b.classes) } },
+      results, seq, run: (clash.test?.run || 0) + 1, ranAt: now,
+      pairs: pairs.length, candidates: items.length, ms: performance.now() - t0,
+    };
+    clash.tab = 'results'; clash.filter = 'All';
+    buildPins();
+    if (results.length) focusClash(results.find((c) => c.status !== 'Resolved') || results[0]);
+    toast(results.length ? `${results.filter((c) => c.status !== 'Resolved').length} clashes found in ${(clash.test.ms / 1000).toFixed(1)} s.` : 'No clashes found.');
+  } catch (err) {
+    console.error(err);
+    toast(/import|fetch|module/i.test(String(err?.message)) ? 'The clash engine could not load. Check your internet connection and try again.' : `The clash test failed: ${err.message || err}`, true);
+  } finally {
+    clash.running = false;
+    renderProps();
+  }
+}
+const pairKey = (a, b) => [a.guid || a.uid, b.guid || b.uid].sort().join('|') + '|' + [a.file, b.file].sort().join('');
+
+/* pins: one marker per clash, clickable in 3D */
+function pinLocal(c) {
+  const g = M.storeys[c.a.storey].group;
+  g.updateMatrixWorld(true);
+  return g.worldToLocal(c.point.clone());
+}
+function buildPins() {
+  for (const o of [...clash.pins.children]) { o.element?.remove(); o.removeFromParent(); }
+  if (!clash.test) return;
+  for (const c of clash.test.results) {
+    const el = document.createElement('button');
+    el.className = 'clash-pin';
+    el.style.setProperty('--pin', statusColor(c.status));
+    el.innerHTML = `<span>${esc(c.id)}</span>`;
+    el.title = `${c.id} · ${c.a.name} × ${c.b.name}`;
+    el.addEventListener('pointerdown', (e) => e.stopPropagation());
+    el.addEventListener('click', (e) => { e.stopPropagation(); focusClash(c); });
+    const o = new CSS2DObject(el);
+    o.position.copy(pinLocal(c));
+    o.userData.clash = c;
+    M.storeys[c.a.storey].group.add(o);
+    c.pin = o;
+  }
+  updatePins();
+}
+function updatePins() {
+  if (!clash.test) return;
+  const list = new Set(filteredClashes());
+  for (const c of clash.test.results) {
+    if (!c.pin) continue;
+    c.pin.visible = clash.open && list.has(c);
+    c.pin.element.classList.toggle('on', c === clash.focus);
+    c.pin.element.style.setProperty('--pin', statusColor(c.status));
+  }
+}
+function clearPins() {
+  for (const c of clash.test?.results || []) { c.pin?.element.remove(); c.pin?.removeFromParent(); c.pin = null; }
+}
+
+function filteredClashes() {
+  const r = clash.test?.results || [];
+  return clash.filter === 'All' ? r : r.filter((c) => c.status === clash.filter);
+}
+function focusClash(c, instant, quiet) {
+  clash.focus = c;
+  state.clashFocus = c;
+  state.selected = null;
+  for (const el of [c.a, c.b]) { el.hidden = false; state.hiddenClasses.delete(el.ifcClass); M.storeys[el.storey].hidden = false; M.files[el.file].hidden = false; }
+  if (state.isolated && !(state.isolated.has(c.a) && state.isolated.has(c.b))) state.isolated = null;
+  if (state.explode) { state.explode = 0; $('#explode').value = 0; applyExplode(); }
+  applyVisibility();
+  applyLook();
+  // frame the spot where the two elements meet, not the whole of both elements
+  const zone = (c.zone || new THREE.Box3().setFromCenterAndSize(c.point, new THREE.Vector3())).clone();
+  const pad = 1.5;
+  const old = cuts.find((x) => x.kind === 'box');
+  if (clash.boxView) {
+    suspendCuts();
+    addBox(zone.clone().expandByScalar(pad), 'Clash box');
+  } else {
+    if (old?.name === 'Clash box') removeCut(old);
+    restoreCuts();
+  }
+  fitBox(zone.clone().expandByScalar(pad * 0.8), null, instant);
+  updatePins();
+  if (quiet) return;
+  renderProps();
+  const row = document.querySelector(`.cl-row[data-id="${c.id}"]`);
+  row?.scrollIntoView({ block: 'nearest' });
+}
+// While a clash is boxed in, the user's own section planes are switched off and restored afterwards.
+function suspendCuts() {
+  if (clash.suspended) return;
+  clash.suspended = cuts.filter((x) => x.kind !== 'box' && x.on);
+  clash.suspended.forEach((x) => (x.on = false));
+  syncCuts(true);
+}
+function restoreCuts() {
+  if (!clash.suspended) return;
+  clash.suspended.forEach((x) => { if (cuts.includes(x)) x.on = true; });
+  clash.suspended = null;
+  syncCuts(true);
+}
+function stepClash(d) {
+  const list = filteredClashes();
+  if (!list.length) return;
+  const i = list.indexOf(clash.focus);
+  focusClash(list[(i + d + list.length) % list.length]);
+}
+function openClash() {
+  if (!M) return;
+  clash.open = true;
+  state.showCheck = false;
+  if (!clash.cfg) clash.cfg = defaultClashCfg();
+  $('#btnClash').setAttribute('aria-pressed', true);
+  if (state.selected) state.selected = null;
+  updatePins();
+  if (clash.focus) focusClash(clash.focus, true); else renderProps();
+  if (matchMedia('(max-width: 860px)').matches) { closePanels(); $('#propsPanel').classList.add('open'); $('#btnProps').setAttribute('aria-pressed', true); }
+}
+function closeClash() {
+  clash.open = false;
+  state.clashFocus = null;
+  $('#btnClash').setAttribute('aria-pressed', false);
+  const old = cuts.find((x) => x.kind === 'box' && x.name === 'Clash box');
+  if (old) removeCut(old);
+  restoreCuts();
+  updatePins();
+  applyLook();
+  updateLabels();
+  renderProps();
+}
+function resetClashes() {
+  clearPins();
+  geoCache.forEach((g) => g.dispose());
+  geoCache.clear();
+  clash.test = null; clash.focus = null; clash.cfg = null; clash.tab = 'rules'; clash.suspended = null;
+  state.clashFocus = null;
+  if (clash.open) clash.cfg = defaultClashCfg();
+}
+$('#btnClash').addEventListener('click', () => (clash.open ? closeClash() : openClash()));
+
+/* panel */
+function selHtml(key, sel) {
+  const files = liveFiles();
+  const classes = [...new Set(M.elements.filter((e) => !M.files[e.file].removed && !NO_CLASH.has(e.ifcClass) && (sel.file === 'all' || e.file === +sel.file)).map((e) => e.ifcClass))].sort();
+  const count = clashSet(sel).length;
+  return `<div class="cl-set" data-set="${key}">
+    <div class="cl-set-head"><span class="cl-badge cl-${key}">${key.toUpperCase()}</span><span class="cl-count">${count.toLocaleString()} elements</span></div>
+    <select id="cl-file-${key}" aria-label="Files in selection ${key.toUpperCase()}">
+      <option value="all">All files</option>${files.map((f) => `<option value="${f.index}" ${sel.file === String(f.index) ? 'selected' : ''}>${esc(f.name)}</option>`).join('')}
+    </select>
+    <div class="cl-chips">
+      <button class="chip" data-cls="*" aria-pressed="${!sel.classes.size}">All classes</button>
+      ${classes.map((c) => `<button class="chip" data-cls="${esc(c)}" aria-pressed="${sel.classes.has(c)}">${esc(c.replace(/^Ifc/, ''))}</button>`).join('')}
+    </div>
+  </div>`;
+}
+function renderClash(box) {
+  $('#propsTitle').textContent = 'Clash coordinator';
+  const t = clash.test, cfg = clash.cfg;
+  const tabs = `<div class="cl-tabs" role="tablist">
+    <button role="tab" data-tab="rules" aria-selected="${clash.tab === 'rules'}">Rules</button>
+    <button role="tab" data-tab="results" aria-selected="${clash.tab === 'results'}" ${t ? '' : 'disabled'}>Results${t ? ` <b>${t.results.filter((c) => c.status !== 'Resolved').length}</b>` : ''}</button>
+  </div>`;
+  let body = '';
+  if (clash.running) {
+    body = `<div class="cl-running"><div class="cl-bar"><i style="width:${Math.round(clash.progress * 100)}%"></i></div>
+      <p id="clProgress">${esc(clash.progressText)}</p><button class="btn small" id="clCancel">Cancel</button></div>`;
+  } else if (clash.tab === 'rules' || !t) {
+    const files = liveFiles();
+    body = `<label class="cl-label" for="clName">Test name</label>
+      <input class="search" id="clName" value="${esc(cfg.name)}">
+      ${selHtml('a', cfg.a)}
+      <button class="btn small cl-swap" id="clSwap" title="Swap A and B">⇅ Swap</button>
+      ${selHtml('b', cfg.b)}
+      <div class="cl-label">Clash type</div>
+      <div class="seg cl-type" role="group" aria-label="Clash type">
+        <button class="btn small" data-type="hard" aria-pressed="${cfg.type === 'hard'}">Hard clash</button>
+        <button class="btn small" data-type="clearance" aria-pressed="${cfg.type === 'clearance'}">Clearance</button>
+      </div>
+      <div class="cl-num">${cfg.type === 'hard'
+        ? `<label for="clTol">Ignore overlaps up to</label><input id="clTol" type="number" min="0" step="1" value="${cfg.tolerance}"><span>mm</span>`
+        : `<label for="clClr">Minimum gap</label><input id="clClr" type="number" min="1" step="5" value="${cfg.clearance}"><span>mm</span>`}</div>
+      <label class="cl-check"><input type="checkbox" id="clSameClass" ${cfg.skipSameClass ? 'checked' : ''}> Skip clashes between elements of the same class</label>
+      ${files.length > 1 ? `<label class="cl-check"><input type="checkbox" id="clSameFile" ${cfg.skipSameFile ? 'checked' : ''}> Skip clashes inside the same file</label>` : ''}
+      <button class="btn primary cl-run" id="clRun">${t ? 'Run test again' : 'Run clash test'}</button>
+      ${t ? '<p class="muted cl-note">Running again keeps statuses and comments. Clashes that are gone are marked Resolved.</p>' : '<p class="muted cl-note">Spaces and openings are never tested. Hidden elements are included.</p>'}`;
+  } else {
+    const open = t.results.filter((c) => c.status !== 'Resolved').length;
+    const counts = Object.fromEntries(CLASH_STATUS.map((s) => [s.id, t.results.filter((c) => c.status === s.id).length]));
+    const total = Math.max(1, t.results.length);
+    const list = filteredClashes();
+    const groups = new Map();
+    for (const c of list) {
+      const g = clash.group === 'storey' ? c.storey : clash.group === 'pair' ? [c.a.ifcClass, c.b.ifcClass].map((x) => x.replace(/^Ifc/, '')).sort().join(' × ') : 'All clashes';
+      if (!groups.has(g)) groups.set(g, []);
+      groups.get(g).push(c);
+    }
+    const f = clash.focus && list.includes(clash.focus) ? clash.focus : null;
+    body = `
+      <div class="cl-kpi">
+        <div><b>${open}</b><span>open clash${open === 1 ? '' : 'es'}</span></div>
+        <div class="cl-meta">${esc(t.name)}<br>${t.cfg.type === 'hard' ? `Hard · ignore ≤ ${t.cfg.tolerance} mm` : `Clearance · ${t.cfg.clearance} mm`}<br>${t.pairs.toLocaleString()} close pairs · ${(t.ms / 1000).toFixed(1)} s</div>
+      </div>
+      <div class="cl-stack" aria-hidden="true">${CLASH_STATUS.map((s) => counts[s.id] ? `<i style="flex:${counts[s.id] / total};background:${s.color}"></i>` : '').join('')}</div>
+      <div class="cl-filters" role="group" aria-label="Filter by status">
+        <button class="cl-pill" data-filter="All" aria-pressed="${clash.filter === 'All'}">All <b>${t.results.length}</b></button>
+        ${CLASH_STATUS.map((s) => `<button class="cl-pill" data-filter="${s.id}" aria-pressed="${clash.filter === s.id}" ${counts[s.id] ? '' : 'disabled'}><i style="background:${s.color}"></i>${s.id} <b>${counts[s.id]}</b></button>`).join('')}
+      </div>
+      ${f ? `<div class="cl-card">
+        <div class="cl-card-head"><span class="cl-id">${esc(f.id)}</span>
+          <select id="clStatus" aria-label="Status" style="--pin:${statusColor(f.status)}">${CLASH_STATUS.map((s) => `<option ${s.id === f.status ? 'selected' : ''}>${s.id}</option>`).join('')}</select>
+          <span class="cl-nav"><button class="eye" id="clPrev" aria-label="Previous clash" title="Previous ( [ )">‹</button><span>${list.indexOf(f) + 1}/${list.length}</span><button class="eye" id="clNext" aria-label="Next clash" title="Next ( ] )">›</button></span></div>
+        <button class="cl-el" data-uid="${f.a.uid}"><span class="cl-badge cl-a">A</span><span class="cl-el-txt"><b>${esc(f.a.name)}</b><span>${esc(f.a.ifcClass)}${liveFiles().length > 1 ? ' · ' + esc(M.files[f.a.file].name) : ''}</span></span></button>
+        <button class="cl-el" data-uid="${f.b.uid}"><span class="cl-badge cl-b">B</span><span class="cl-el-txt"><b>${esc(f.b.name)}</b><span>${esc(f.b.ifcClass)}${liveFiles().length > 1 ? ' · ' + esc(M.files[f.b.file].name) : ''}</span></span></button>
+        <dl class="cl-facts">
+          <dt>${f.kind === 'Hard' ? 'Overlap zone' : 'Gap'}</dt><dd>${mm(f.dist)}</dd>
+          <dt>Type</dt><dd>${esc(f.kind)}</dd>
+          <dt>Storey</dt><dd>${esc(f.storey)}</dd>
+        </dl>
+        <textarea id="clComment" rows="2" placeholder="Add a note for the team, e.g. who fixes it">${esc(f.comment)}</textarea>
+        <label class="cl-check"><input type="checkbox" id="clBox" ${clash.boxView ? 'checked' : ''}> Box in the clash</label>
+      </div>` : ''}
+      <div class="cl-listhead"><span class="cl-label">Clashes</span>
+        <select id="clGroup" aria-label="Group clashes by"><option value="pair" ${clash.group === 'pair' ? 'selected' : ''}>Group by class pair</option><option value="storey" ${clash.group === 'storey' ? 'selected' : ''}>Group by storey</option><option value="none" ${clash.group === 'none' ? 'selected' : ''}>No grouping</option></select></div>
+      <div class="cl-list">${list.length ? [...groups.entries()].map(([g, cs]) => `
+        <div class="cl-group"><span>${esc(g)}</span><b>${cs.length}</b></div>
+        ${cs.map((c) => `<button class="cl-row ${c === clash.focus ? 'on' : ''}" data-id="${esc(c.id)}">
+          <i style="background:${statusColor(c.status)}" title="${c.status}"></i><span class="cl-rid">${esc(c.id)}</span>
+          <span class="cl-rname">${esc(c.a.name)} <em>×</em> ${esc(c.b.name)}</span><span class="cl-rd">${Math.round(c.dist * 1000)} mm</span></button>`).join('')}`).join('')
+        : '<p class="muted">No clashes with this status.</p>'}</div>
+      <div class="cl-export">
+        <button class="btn primary small" id="clPdf">Clash report (PDF)</button>
+        <button class="btn small" id="clBcf" title="Open the issues in Revit, Navisworks, BIMcollab or Solibri">BCF</button>
+        <button class="btn small" id="clCsv">CSV</button>
+      </div>`;
+  }
+  box.innerHTML = `<div class="cl-top">${tabs}<button class="btn small" id="clClose">Close</button></div>${body}`;
+  wireClash(box);
+}
+function updateClashProgress() {
+  const bar = document.querySelector('.cl-bar i');
+  if (bar) bar.style.width = Math.round(clash.progress * 100) + '%';
+  const p = $('#clProgress');
+  if (p) p.textContent = clash.progressText;
+}
+function wireClash(box) {
+  const cfg = clash.cfg;
+  const on = (sel, ev, fn) => box.querySelectorAll(sel).forEach((n) => n.addEventListener(ev, fn));
+  on('#clClose', 'click', closeClash);
+  on('[data-tab]', 'click', (e) => { clash.tab = e.currentTarget.dataset.tab; renderProps(); });
+  on('#clCancel', 'click', () => { clash.cancel = true; });
+  on('#clName', 'input', (e) => { cfg.name = e.target.value; });
+  on('select[id^="cl-file-"]', 'change', (e) => {
+    const k = e.target.id.slice(-1);
+    cfg[k].file = e.target.value;
+    cfg[k].classes.clear();
+    renderProps();
+  });
+  on('.cl-set .chip', 'click', (e) => {
+    const k = e.currentTarget.closest('.cl-set').dataset.set, c = e.currentTarget.dataset.cls;
+    if (c === '*') cfg[k].classes.clear();
+    else cfg[k].classes.has(c) ? cfg[k].classes.delete(c) : cfg[k].classes.add(c);
+    renderProps();
+  });
+  on('#clSwap', 'click', () => { [cfg.a, cfg.b] = [cfg.b, cfg.a]; renderProps(); });
+  on('[data-type]', 'click', (e) => { cfg.type = e.currentTarget.dataset.type; renderProps(); });
+  on('#clTol', 'input', (e) => { cfg.tolerance = Math.max(0, +e.target.value || 0); });
+  on('#clClr', 'input', (e) => { cfg.clearance = Math.max(1, +e.target.value || 1); });
+  on('#clSameClass', 'change', (e) => { cfg.skipSameClass = e.target.checked; });
+  on('#clSameFile', 'change', (e) => { cfg.skipSameFile = e.target.checked; });
+  on('#clRun', 'click', runClashTest);
+  on('[data-filter]', 'click', (e) => { clash.filter = e.currentTarget.dataset.filter; updatePins(); renderProps(); });
+  on('#clGroup', 'change', (e) => { clash.group = e.target.value; renderProps(); });
+  on('.cl-row', 'click', (e) => focusClash(clash.test.results.find((c) => c.id === e.currentTarget.dataset.id)));
+  on('#clPrev', 'click', () => stepClash(-1));
+  on('#clNext', 'click', () => stepClash(1));
+  on('#clStatus', 'change', (e) => { clash.focus.status = e.target.value; updatePins(); renderProps(); });
+  on('#clComment', 'input', (e) => { clash.focus.comment = e.target.value; });
+  on('#clBox', 'change', (e) => { clash.boxView = e.target.checked; focusClash(clash.focus); });
+  on('.cl-el', 'click', (e) => { select(M.byUid.get(+e.currentTarget.dataset.uid)); });
+  on('#clPdf', 'click', () => clashReportPdf().catch(clashExportFailed));
+  on('#clCsv', 'click', clashCsv);
+  on('#clBcf', 'click', () => clashBcf().catch(clashExportFailed));
+}
+function clashExportFailed(err) {
+  console.error(err);
+  hideBusy();
+  toast(`The export failed: ${err.message || err}`, true);
+}
+
+/* exports */
+// Snapshot of each clash, made by visiting it with the box view on. Restores the current clash after.
+async function captureClashes(list, width, type) {
+  const keep = clash.focus, keepBox = clash.boxView;
+  clash.boxView = true;
+  const out = new Map();
+  const cv = document.createElement('canvas');
+  const ctx2 = cv.getContext('2d');
+  for (let i = 0; i < list.length; i++) {
+    showBusy(`Taking pictures of clashes… ${i + 1} of ${list.length}`);
+    focusClash(list[i], true, true);
+    controls.update();
+    for (const c of list) if (c.pin) c.pin.visible = false;
+    gizmos.visible = false;
+    renderer.render(scene, camera);
+    const src = renderer.domElement;
+    cv.width = width;
+    cv.height = Math.round((src.height / src.width) * width);
+    ctx2.drawImage(src, 0, 0, cv.width, cv.height);
+    out.set(list[i], cv.toDataURL(type, 0.82));
+    gizmos.visible = true;
+    await nextFrame();
+  }
+  clash.boxView = keepBox;
+  if (keep) focusClash(keep, true); else updatePins();
+  hideBusy();
+  return out;
+}
+const clashFileName = (ext) => `${reportBase()}-${(clash.test.name || 'clashes').replace(/[^\w.-]+/g, '_')}.${ext}`;
+
+function clashCsv() {
+  const t = clash.test;
+  const body = t.results.map((c) => [c.id, c.status, c.kind, Math.round(c.dist * 1000), c.storey,
+    M.files[c.a.file].name, c.a.ifcClass, c.a.name, c.a.guid, M.files[c.b.file].name, c.b.ifcClass, c.b.name, c.b.guid,
+    ...ifcPoint(c.point).map((v) => v.toFixed(3)), c.comment, c.foundAt.toISOString().slice(0, 10)]);
+  downloadCsv(clashFileName('csv'), ['ID', 'Status', 'Type', 'Overlap zone or gap (mm)', 'Storey', 'A model', 'A class', 'A name', 'A GlobalId', 'B model', 'B class', 'B name', 'B GlobalId', 'X (m)', 'Y (m)', 'Z (m)', 'Comment', 'Found'], body);
+  toast(`Exported ${t.results.length} clashes.`);
+}
+
+// Viewer coordinates back to the IFC project's own coordinates (Z up, original origin).
+function ifcPoint(v, isDir) {
+  const p = v.clone();
+  if (!isDir) {
+    p.sub(M.root.position);
+    if (M.coord) p.applyMatrix4(M.coord.clone().invert());
+  }
+  return [p.x, -p.z, p.y];
+}
+
+async function clashReportPdf() {
+  const win = window.open('', '_blank');
+  const t = clash.test;
+  const list = t.results;
+  const LIMIT = 60;
+  const shots = await captureClashes(list.slice(0, LIMIT), 720, 'image/jpeg');
+  const counts = CLASH_STATUS.map((s) => [s, list.filter((c) => c.status === s.id).length]);
+  const by = (fn) => { const m = new Map(); for (const c of list) m.set(fn(c), (m.get(fn(c)) || 0) + 1); return [...m.entries()].sort((a, b) => b[1] - a[1]); };
+  const pairsTbl = by((c) => [c.a.ifcClass, c.b.ifcClass].sort().join(' × '));
+  const storeyTbl = by((c) => c.storey);
+  const files = liveFiles();
+  const date = t.ranAt.toLocaleString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const selTxt = (s) => `${s.file === 'all' ? 'All files' : esc(M.files[+s.file].name)} · ${s.classes.size ? [...s.classes].map(esc).join(', ') : 'all classes'}`;
+  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Clash report · ${esc(t.name)}</title>
+<style>
+  @page { size: A4; margin: 14mm; }
+  :root { --ink: #16201b; --ink2: #5a655e; --line: #d5dbd3; --accent: #2b53c2; }
+  body { font: 10pt/1.45 "IBM Plex Sans", system-ui, sans-serif; color: var(--ink); margin: 0 auto; max-width: 190mm; padding: 16px; }
+  .bar { display: flex; gap: 8px; margin-bottom: 18px; }
+  .bar button { font: inherit; padding: 7px 14px; border: 0; background: var(--accent); color: #fff; border-radius: 5px; cursor: pointer; }
+  .cover { border: 2px solid var(--ink); padding: 22px 24px; display: grid; gap: 14px; }
+  .eyebrow { font: 600 9pt "Barlow Condensed", "Arial Narrow", sans-serif; letter-spacing: .16em; text-transform: uppercase; color: var(--ink2); }
+  h1 { font: 700 30pt/1 "Barlow Condensed", "Arial Narrow", sans-serif; text-transform: uppercase; margin: 0; }
+  h2 { font: 600 13pt "Barlow Condensed", "Arial Narrow", sans-serif; text-transform: uppercase; letter-spacing: .08em; margin: 24px 0 8px; border-bottom: 1.5px solid var(--ink); padding-bottom: 3px; }
+  .kpis { display: grid; grid-template-columns: 1.4fr repeat(5, 1fr); border: 1px solid var(--line); }
+  .kpis div { padding: 8px 10px; border-right: 1px solid var(--line); }
+  .kpis div:last-child { border-right: 0; }
+  .kpis b { display: block; font: 700 22pt/1 "Barlow Condensed", "Arial Narrow", sans-serif; font-variant-numeric: tabular-nums; }
+  .kpis span { font-size: 8.5pt; color: var(--ink2); display: flex; align-items: center; gap: 5px; }
+  .kpis i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+  table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+  th { text-align: left; font-weight: 600; border-bottom: 1px solid var(--ink); padding: 4px 6px; }
+  td { border-bottom: 1px solid var(--line); padding: 3px 6px; vertical-align: top; }
+  .n { text-align: right; font-variant-numeric: tabular-nums; font-family: "IBM Plex Mono", ui-monospace, monospace; }
+  .rules td:first-child { color: var(--ink2); width: 32%; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .card { border: 1px solid var(--line); break-inside: avoid; display: grid; }
+  .card img { width: 100%; display: block; border-bottom: 1px solid var(--line); }
+  .card .body { padding: 8px 10px; display: grid; gap: 4px; }
+  .card .head { display: flex; align-items: center; gap: 8px; }
+  .card .id { font: 700 14pt "Barlow Condensed", "Arial Narrow", sans-serif; }
+  .pill { font-size: 8pt; font-weight: 600; color: #fff; padding: 1px 7px; border-radius: 999px; }
+  .card .d { margin-left: auto; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 9pt; }
+  .el { display: flex; gap: 6px; align-items: baseline; font-size: 9pt; }
+  .tag { font: 700 8pt "IBM Plex Mono", monospace; color: #fff; padding: 0 5px; border-radius: 3px; }
+  .meta { color: var(--ink2); font-size: 8.5pt; }
+  .note { background: #f4f6f2; border-left: 3px solid var(--accent); padding: 4px 8px; font-size: 9pt; }
+  footer { margin-top: 24px; color: var(--ink2); font-size: 8.5pt; border-top: 1px solid var(--line); padding-top: 6px; }
+  @media print { .bar { display: none; } body { padding: 0; } h2 { break-after: avoid; } }
+</style></head><body>
+<div class="bar"><button onclick="print()">Print or save as PDF</button></div>
+<section class="cover">
+  <div class="eyebrow">Clash report · ${esc(date)}</div>
+  <h1>${esc(t.name)}</h1>
+  <div class="kpis">
+    <div><b>${list.filter((c) => c.status !== 'Resolved').length}</b><span>open clashes of ${list.length}</span></div>
+    ${counts.map(([s, n]) => `<div><b>${n}</b><span><i style="background:${s.color}"></i>${s.id}</span></div>`).join('')}
+  </div>
+  <table class="rules"><tbody>
+    <tr><td>Models</td><td>${files.map((f) => `${esc(f.name)} <span class="meta">(${esc(f.schema || '—')})</span>`).join(', ')}</td></tr>
+    <tr><td>Selection A</td><td>${selTxt(t.cfg.a)}</td></tr>
+    <tr><td>Selection B</td><td>${selTxt(t.cfg.b)}</td></tr>
+    <tr><td>Rule</td><td>${t.cfg.type === 'hard' ? `Hard clash, overlaps up to ${t.cfg.tolerance} mm ignored` : `Clearance, closer than ${t.cfg.clearance} mm`}${t.cfg.skipSameClass ? ' · same class skipped' : ''}${t.cfg.skipSameFile ? ' · same file skipped' : ''}</td></tr>
+    <tr><td>Checked</td><td>${t.pairs.toLocaleString()} close pairs among ${t.candidates.toLocaleString()} elements in ${(t.ms / 1000).toFixed(1)} s</td></tr>
+  </tbody></table>
+</section>
+<div class="two">
+  <div><h2>By element type</h2><table><thead><tr><th>A × B</th><th class="n">Clashes</th></tr></thead><tbody>${pairsTbl.map(([k, n]) => `<tr><td>${esc(k)}</td><td class="n">${n}</td></tr>`).join('')}</tbody></table></div>
+  <div><h2>By storey</h2><table><thead><tr><th>Storey</th><th class="n">Clashes</th></tr></thead><tbody>${storeyTbl.map(([k, n]) => `<tr><td>${esc(k)}</td><td class="n">${n}</td></tr>`).join('')}</tbody></table></div>
+</div>
+<h2>Clashes</h2>
+<div class="cards">${list.slice(0, LIMIT).map((c) => `<article class="card">
+  ${shots.get(c) ? `<img src="${shots.get(c)}" alt="View of clash ${esc(c.id)}">` : ''}
+  <div class="body">
+    <div class="head"><span class="id">${esc(c.id)}</span><span class="pill" style="background:${statusColor(c.status)}">${c.status}</span><span class="d">${c.kind === 'Hard' ? 'overlap zone ' : 'gap '}${mm(c.dist)}</span></div>
+    <div class="el"><span class="tag" style="background:#e5533d">A</span><span><b>${esc(c.a.name)}</b> <span class="meta">${esc(c.a.ifcClass)} · ${esc(c.a.guid || '')}</span></span></div>
+    <div class="el"><span class="tag" style="background:#2f7fd8">B</span><span><b>${esc(c.b.name)}</b> <span class="meta">${esc(c.b.ifcClass)} · ${esc(c.b.guid || '')}</span></span></div>
+    <div class="meta">${esc(c.storey)} · ${c.kind} · x ${ifcPoint(c.point).map((v) => v.toFixed(2)).join(', ')} m</div>
+    ${c.comment ? `<div class="note">${esc(c.comment)}</div>` : ''}
+  </div></article>`).join('')}</div>
+${list.length > LIMIT ? `<h2>More clashes</h2><table><thead><tr><th>ID</th><th>Status</th><th>A</th><th>B</th><th>Storey</th><th class="n">mm</th></tr></thead><tbody>
+${list.slice(LIMIT).map((c) => `<tr><td>${esc(c.id)}</td><td>${c.status}</td><td>${esc(c.a.name)}</td><td>${esc(c.b.name)}</td><td>${esc(c.storey)}</td><td class="n">${Math.round(c.dist * 1000)}</td></tr>`).join('')}</tbody></table>` : ''}
+<footer>Made with Sightline IFC Viewer. Models were read in the browser and never uploaded. For hard clashes, the overlap zone is the smallest side of the box where the two elements overlap. It shows how big the conflict is, not exactly how deep one element goes into the other.</footer>
+</body></html>`;
+  if (win) { win.document.open(); win.document.write(html); win.document.close(); win.focus(); }
+  else { downloadFile(clashFileName('html'), html, 'text/html'); toast('Your browser blocked the report window, so it was downloaded instead. Open it and print to PDF.'); }
+}
+
+function loadScript(src) {
+  return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej(new Error('Could not load ' + src)); document.head.appendChild(s); });
+}
+async function clashBcf() {
+  const t = clash.test;
+  if (!window.JSZip) await loadScript('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js');
+  const shots = await captureClashes(t.results, 640, 'image/png');
+  const zip = new window.JSZip();
+  const x = (s) => esc(s).replace(/'/g, '&apos;');
+  zip.file('bcf.version', `<?xml version="1.0" encoding="UTF-8"?>\n<Version VersionId="2.1"><DetailedVersion>2.1</DetailedVersion></Version>`);
+  const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-8xxx-xxxxxxxxxxxx'.replace(/x/g, () => ((Math.random() * 16) | 0).toString(16)));
+  const xyz = (tag, [a, b, c]) => `<${tag}><X>${a.toFixed(4)}</X><Y>${b.toFixed(4)}</Y><Z>${c.toFixed(4)}</Z></${tag}>`;
+  const keep = clash.focus;
+  for (const c of t.results) {
+    focusClash(c, true, true);
+    controls.update();
+    const topic = c.bcfGuid ||= uuid(), vp = uuid();
+    const dir = new THREE.Vector3(); camera.getWorldDirection(dir);
+    const up = camera.up.clone();
+    const iso = c.foundAt.toISOString();
+    const statusMap = { New: 'Open', Active: 'In Progress', Reviewed: 'In Progress', Approved: 'Closed', Resolved: 'Resolved' };
+    const folder = zip.folder(topic);
+    folder.file('markup.bcf', `<?xml version="1.0" encoding="UTF-8"?>
+<Markup>
+  <Topic Guid="${topic}" TopicType="Clash" TopicStatus="${statusMap[c.status]}">
+    <Title>${x(`${c.id} ${c.a.ifcClass} × ${c.b.ifcClass}`)}</Title>
+    <Labels>${x(c.status)}</Labels>
+    <CreationDate>${iso}</CreationDate>
+    <CreationAuthor>Sightline</CreationAuthor>
+    <Description>${x(`${c.kind} clash between ${c.a.name} and ${c.b.name} on ${c.storey}. ${c.kind === 'Hard' ? 'Overlap zone' : 'Gap'} ${Math.round(c.dist * 1000)} mm. Test: ${t.name}.`)}</Description>
+  </Topic>${c.comment ? `
+  <Comment Guid="${uuid()}">
+    <Date>${new Date().toISOString()}</Date>
+    <Author>Sightline</Author>
+    <Comment>${x(c.comment)}</Comment>
+    <Viewpoint Guid="${vp}"/>
+  </Comment>` : ''}
+  <Viewpoints Guid="${vp}">
+    <Viewpoint>viewpoint.bcfv</Viewpoint>
+    <Snapshot>snapshot.png</Snapshot>
+  </Viewpoints>
+</Markup>`);
+    folder.file('viewpoint.bcfv', `<?xml version="1.0" encoding="UTF-8"?>
+<VisualizationInfo Guid="${vp}">
+  <Components>
+    <Selection>${[c.a, c.b].filter((e) => e.guid).map((e) => `<Component IfcGuid="${x(e.guid)}"/>`).join('')}</Selection>
+    <Visibility DefaultVisibility="true"/>
+    <Coloring>${c.a.guid ? `<Color Color="FFE5533D"><Component IfcGuid="${x(c.a.guid)}"/></Color>` : ''}${c.b.guid ? `<Color Color="FF2F7FD8"><Component IfcGuid="${x(c.b.guid)}"/></Color>` : ''}</Coloring>
+  </Components>
+  <PerspectiveCamera>
+    ${xyz('CameraViewPoint', ifcPoint(camera.position))}
+    ${xyz('CameraDirection', ifcPoint(dir, true))}
+    ${xyz('CameraUpVector', ifcPoint(up, true))}
+    <FieldOfView>${camera.fov}</FieldOfView>
+  </PerspectiveCamera>
+</VisualizationInfo>`);
+    folder.file('snapshot.png', shots.get(c).split(',')[1], { base64: true });
+  }
+  if (keep) focusClash(keep, true);
+  const blob = await zip.generateAsync({ type: 'blob' });
+  downloadFile(clashFileName('bcfzip'), blob, 'application/zip');
+  toast(`Exported ${t.results.length} clashes as BCF 2.1. Import the file in Revit, Navisworks, BIMcollab or Solibri.`);
+}
+window.addEventListener('keydown', (e) => {
+  if (!clash.open || !clash.test || e.target.matches('input, textarea, select')) return;
+  if (e.key === ']') stepClash(1);
+  if (e.key === '[') stepClash(-1);
 });
 
 /* ---------- panels (narrow screens) ---------- */

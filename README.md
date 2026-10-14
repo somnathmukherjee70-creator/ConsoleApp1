@@ -54,6 +54,13 @@ Libraries are loaded from cdn.jsdelivr.net, so the browser needs internet access
   - Drag the arrows in 3D, or use each cut's slider; rotate a plane to any angle with Turn and Tilt;
     flip it to cut the other side; stack as many cuts as you like
   - Cut faces are filled solid, like poché on a drawing
+- **Clash coordinator**: test selection A against selection B (by file and IFC class) for hard clashes
+  with a tolerance, or for a minimum clearance. Exact triangle tests (three-mesh-bvh) after a fast
+  bounding-box sweep, so typical models finish in seconds. Each clash is framed close up with its two
+  elements in red and blue, has a status (New, Active, Reviewed, Approved, Resolved) and a comment,
+  and shows as a pin in 3D. Running a test again keeps statuses and marks fixed clashes Resolved.
+  Export a PDF clash report with a picture of every clash, a CSV, or BCF 2.1 for Revit, Navisworks,
+  BIMcollab and Solibri
 - **Model check**: one click scores the model out of 100 and lists 14 kinds of common IFC problems
   (duplicate or missing GlobalIds, duplicate elements, misaligned files, proxies, missing storeys,
   properties, materials, names and sizes, tiny geometry, empty storeys). Click an issue to zoom to it,
