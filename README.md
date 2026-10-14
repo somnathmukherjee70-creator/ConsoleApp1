@@ -6,9 +6,8 @@ Files are processed in the visitor's browser and never uploaded, so there is no 
 
 ```
 docs/
-  index.html        sends visitors straight to the viewer
+  index.html        landing page (search-engine friendly)
   viewer/index.html the viewer app (one file, no build step)
-  about.html        about page with features and FAQ (search-engine friendly)
   assets/           favicon and the screenshot used on the landing page
   robots.txt, sitemap.xml
 ```
@@ -17,14 +16,12 @@ docs/
 
 1. The repository must be public (or on a paid GitHub plan).
 2. On GitHub: **Settings → Pages → Build and deployment → Deploy from a branch**.
-3. Choose the branch with this code and the **`/ (root)`** folder, then **Save**.
-4. After a minute the site is live at https://somnathmukherjee70-creator.github.io/ConsoleApp1/ and opens
-   the viewer directly. The about page is at `docs/about.html` (click the Sightline name in the viewer).
+3. Choose the branch with this code and the **`/docs`** folder, then **Save**.
+4. After a minute the site is live at https://somnathmukherjee70-creator.github.io/ConsoleApp1/
 
 To make it show up in Google, add the site in [Google Search Console](https://search.google.com/search-console)
-and submit `docs/sitemap.xml`. If you later use your own domain, update the addresses in
-`index.html`, `robots.txt` and the files in `docs/` (`index.html`, `about.html`, `viewer/index.html`,
-`robots.txt`, `sitemap.xml`).
+and submit `sitemap.xml`. If you later use your own domain, update the addresses in
+`docs/index.html`, `docs/viewer/index.html`, `docs/robots.txt` and `docs/sitemap.xml`.
 
 ## Run it locally
 
@@ -33,7 +30,7 @@ cd docs
 python3 -m http.server 8000   # or: npx serve .
 ```
 
-Then open http://localhost:8000 (it goes straight to the viewer). The about page is http://localhost:8000/about.html. The page opens on a built-in sample building (Riverside Office Block).
+Then open http://localhost:8000 for the landing page, or http://localhost:8000/viewer/ for the viewer. The page opens on a built-in sample building (Riverside Office Block).
 Use **Open IFC** to replace the model with your own `.ifc` files (IFC2X3 / IFC4), or **Add IFC**
 (or drag files onto the viewport) to merge more files into the current model.
 Libraries are loaded from cdn.jsdelivr.net, so the browser needs internet access.

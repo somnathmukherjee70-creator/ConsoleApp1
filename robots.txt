@@ -1,3 +1,0 @@
-User-agent: *
-Allow: /
-Sitemap: https://somnathmukherjee70-creator.github.io/ConsoleApp1/docs/sitemap.xml
