@@ -8,6 +8,9 @@ namespace RevitGeoExport
 {
     public sealed class ExportSettings
     {
+        /// <summary>When set, the model is placed by its own shared coordinates in this system and the latitude/longitude anchor is ignored.</summary>
+        public ProjectedCrs Crs { get; set; }
+
         public double Latitude { get; set; }
         public double Longitude { get; set; }
         public AnchorPoint Anchor { get; set; }
@@ -27,6 +30,8 @@ namespace RevitGeoExport
     /// <summary>Collects where to place the model and what to export.</summary>
     public sealed class ExportDialog : Form
     {
+        private readonly TextBox _crs = new TextBox { Width = 260 };
+        private readonly Label _crsStatus = Hint("");
         private readonly TextBox _coordinates = new TextBox { Width = 260 };
         private readonly ComboBox _anchor = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 260 };
         private readonly NumericUpDown _rotation = Number(-360, 360, 2);
@@ -49,24 +54,29 @@ namespace RevitGeoExport
             AutoSizeMode = AutoSizeMode.GrowAndShrink;
             Padding = new Padding(10);
 
+            _crs.Text = location.DetectedCrs?.Epsg.ToString(CultureInfo.InvariantCulture) ?? "";
+            _crs.TextChanged += (s, e) => UpdatePlacementMode(location.DetectionNote);
             _coordinates.Text = string.Format(CultureInfo.InvariantCulture, "{0:0.0000000}, {1:0.0000000}", location.LatitudeDegrees, location.LongitudeDegrees);
             _anchor.Items.AddRange(new object[] { "Survey Point", "Project Base Point", "Internal Origin" });
             _anchor.SelectedIndex = 0;
             _altitude.Items.AddRange(new object[] { "Sit on the terrain", "Above sea level" });
             _altitude.SelectedIndex = 0;
-            _elevation.Value = (decimal)Math.Max(-500, Math.Min(9000, location.ElevationMeters));
+            // Shared coordinates in a survey system usually carry real elevations already.
+            _elevation.Value = location.DetectedCrs != null ? 0 : (decimal)Math.Max(-500, Math.Min(9000, location.ElevationMeters));
             _output.Text = defaultOutput;
 
             var browse = new Button { Text = "Browse…", AutoSize = true };
             browse.Click += (s, e) => Browse();
 
             var grid = new TableLayoutPanel { ColumnCount = 2, AutoSize = true, Dock = DockStyle.Fill };
+            AddRow(grid, "Coordinate system (EPSG)", _crs);
+            AddRow(grid, "", _crsStatus);
             AddRow(grid, "Latitude, longitude", _coordinates);
             AddRow(grid, "", Hint($"Revit location: {location.PlaceName}. Paste from Google Maps (right-click a spot › copy the coordinates)."));
             AddRow(grid, "Coordinates are of the", _anchor);
             AddRow(grid, "Rotation adjustment (° clockwise)", _rotation);
             AddRow(grid, "Height", _altitude);
-            AddRow(grid, "Anchor elevation (m above sea)", _elevation);
+            AddRow(grid, "Height of Z = 0 above sea (m)", _elevation);
             AddRow(grid, "Vertical offset (m)", _offset);
             AddRow(grid, "Export", Stack(_kmz, _geoJson, _webMap));
             AddRow(grid, "Save to (no extension)", Stack(_output, browse));
@@ -80,13 +90,40 @@ namespace RevitGeoExport
             AddRow(grid, "", Stack(ok, cancel));
 
             Controls.Add(grid);
+            UpdatePlacementMode(location.DetectionNote);
+        }
+
+        private bool UsesCoordinateSystem => !string.IsNullOrWhiteSpace(_crs.Text);
+
+        /// <summary>With a coordinate system the model places itself, so the manual placement fields are disabled.</summary>
+        private void UpdatePlacementMode(string detectionNote)
+        {
+            bool parsed = ProjectedCrs.TryParse(_crs.Text, out var crs);
+            _crsStatus.Text = !UsesCoordinateSystem ? detectionNote
+                : parsed ? $"Placed automatically by the model's shared coordinates in {crs}."
+                : "Not a supported coordinate system (UTM on WGS84/NAD83/ETRS89/GDA, or 3857).";
+            _crsStatus.ForeColor = UsesCoordinateSystem && !parsed ? System.Drawing.Color.Firebrick : System.Drawing.SystemColors.GrayText;
+
+            _coordinates.Enabled = _anchor.Enabled = _rotation.Enabled = _save.Enabled = !UsesCoordinateSystem;
+            if (UsesCoordinateSystem)
+                _save.Checked = false;
         }
 
         public ExportSettings Settings { get; private set; }
 
         private void OnExport(object sender, EventArgs e)
         {
-            if (!TryParseCoordinates(_coordinates.Text, out double lat, out double lon))
+            ProjectedCrs crs = null;
+            if (UsesCoordinateSystem && !ProjectedCrs.TryParse(_crs.Text, out crs))
+            {
+                MessageBox.Show(this, "The coordinate system isn't supported. Clear it to place the model by latitude/longitude instead.",
+                    Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                DialogResult = DialogResult.None;
+                return;
+            }
+
+            double lat = 0, lon = 0;
+            if (crs == null && !TryParseCoordinates(_coordinates.Text, out lat, out lon))
             {
                 MessageBox.Show(this, "Enter the coordinates as \"latitude, longitude\" in decimal degrees, e.g. 22.544808, 88.342558.",
                     Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -103,6 +140,7 @@ namespace RevitGeoExport
 
             Settings = new ExportSettings
             {
+                Crs = crs,
                 Latitude = lat,
                 Longitude = lon,
                 Anchor = (AnchorPoint)_anchor.SelectedIndex,

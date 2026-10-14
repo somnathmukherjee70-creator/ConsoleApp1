@@ -90,9 +90,9 @@
 
       if (geojson.name) document.getElementById('title').textContent = geojson.name;
       const count = geojson.features.length;
-      const a = geojson.anchor;
-      document.getElementById('stats').textContent = a
-        ? `${count} elements · anchor ${a.latitude.toFixed(6)}, ${a.longitude.toFixed(6)}`
+      const c = geojson.center;
+      document.getElementById('stats').textContent = c
+        ? `${count} elements at ${c.latitude.toFixed(6)}, ${c.longitude.toFixed(6)}` + (geojson.placement ? ` · ${geojson.placement}` : '')
         : `${count} elements`;
 
       const bounds = new maplibregl.LngLatBounds();

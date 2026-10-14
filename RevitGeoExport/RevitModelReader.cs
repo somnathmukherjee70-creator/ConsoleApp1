@@ -17,6 +17,12 @@ namespace RevitGeoExport
     {
         private const double FeetToMeters = 0.3048;
 
+        // Shared coordinates further than this from the origin are treated as real eastings/northings.
+        private const double RealCoordinateThresholdMeters = 1000;
+
+        // How close a UTM reading must land to the Revit site location to be trusted.
+        private const double UtmMatchToleranceMeters = 50_000;
+
         private RevitLocation(Transform toShared, XYZ surveyShared, XYZ projectBaseShared, SiteLocation site)
         {
             ToShared = toShared;
@@ -26,6 +32,7 @@ namespace RevitGeoExport
             LongitudeDegrees = site.Longitude * 180 / Math.PI;
             ElevationMeters = site.Elevation * FeetToMeters;
             PlaceName = site.PlaceName;
+            DetectCoordinateSystem(site);
         }
 
         /// <summary>Internal coordinates (feet) to shared coordinates (feet, Y = true north).</summary>
@@ -37,6 +44,12 @@ namespace RevitGeoExport
         public double LongitudeDegrees { get; }
         public double ElevationMeters { get; }
         public string PlaceName { get; }
+
+        /// <summary>The coordinate system the shared coordinates are in, when one could be found.</summary>
+        public ProjectedCrs DetectedCrs { get; private set; }
+
+        /// <summary>What was found while detecting the coordinate system, for the dialog.</summary>
+        public string DetectionNote { get; private set; }
 
         public static RevitLocation Read(Document doc)
         {
@@ -54,6 +67,68 @@ namespace RevitGeoExport
             }
 
             return new RevitLocation(toShared, survey.SharedPosition, projectBase.SharedPosition, doc.SiteLocation);
+        }
+
+        /// <summary>Builds a function from internal coordinates to shared coordinates in metres (eastings, northings, elevation).</summary>
+        public Func<XYZ, Vec3> ProjectedFrame()
+        {
+            var toShared = ToShared;
+            return p =>
+            {
+                var s = toShared.OfPoint(p);
+                return new Vec3(s.X * FeetToMeters, s.Y * FeetToMeters, s.Z * FeetToMeters);
+            };
+        }
+
+        private void DetectCoordinateSystem(SiteLocation site)
+        {
+            // 1. A GIS coordinate system assigned in Revit (acquired from Civil 3D, a DWG or ACC).
+            string id = site.GeoCoordinateSystemId;
+            if (!string.IsNullOrEmpty(id))
+            {
+                if (ProjectedCrs.TryParse(id, out var crs) || ProjectedCrs.TryParse(site.GeoCoordinateSystemDefinition, out crs))
+                {
+                    DetectedCrs = crs;
+                    DetectionNote = $"Found in the Revit project: {id}.";
+                }
+                else
+                {
+                    DetectionNote = $"The project uses coordinate system \"{id}\", which isn't supported. Enter its EPSG code if it is UTM, or place it by latitude/longitude.";
+                }
+
+                return;
+            }
+
+            // 2. Shared coordinates that look like UTM eastings/northings for the Revit site location's zone.
+            var shared = ProjectBasePointShared;
+            if (Math.Abs(shared.X) * FeetToMeters < RealCoordinateThresholdMeters && Math.Abs(shared.Y) * FeetToMeters < RealCoordinateThresholdMeters)
+                shared = ToShared.OfPoint(XYZ.Zero);
+            double east = shared.X * FeetToMeters, north = shared.Y * FeetToMeters;
+            if (Math.Abs(east) < RealCoordinateThresholdMeters && Math.Abs(north) < RealCoordinateThresholdMeters)
+            {
+                DetectionNote = "No coordinate system found; the model is placed by latitude/longitude.";
+                return;
+            }
+
+            var utm = ProjectedCrs.Utm(ProjectedCrs.UtmZoneFor(LongitudeDegrees), south: LatitudeDegrees < 0);
+            var (lon, lat) = utm.ToLonLat(east, north);
+            if (DistanceMeters(lat, lon, LatitudeDegrees, LongitudeDegrees) <= UtmMatchToleranceMeters)
+            {
+                DetectedCrs = utm;
+                DetectionNote = $"The shared coordinates are UTM eastings/northings near {PlaceName}.";
+            }
+            else
+            {
+                DetectionNote = "The shared coordinates look like real eastings/northings. Enter their EPSG code (e.g. 32645 for UTM 45N) to place the model by them.";
+            }
+        }
+
+        private static double DistanceMeters(double lat1, double lon1, double lat2, double lon2)
+        {
+            double toRad = Math.PI / 180;
+            double x = (lon2 - lon1) * toRad * Math.Cos((lat1 + lat2) / 2 * toRad);
+            double y = (lat2 - lat1) * toRad;
+            return Math.Sqrt(x * x + y * y) * 6_371_000;
         }
 
         /// <summary>Builds a function from internal coordinates to East-North-Up metres around the chosen anchor.</summary>

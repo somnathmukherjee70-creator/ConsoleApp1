@@ -8,7 +8,7 @@ namespace RevitGeoExport.Core
         /// <summary>The lowest point of the model sits on the map's terrain (plus <see cref="ExportOptions.GroundOffsetMeters"/>).</summary>
         OnGround,
 
-        /// <summary>Heights are the anchor elevation plus the model's own Z, above sea level.</summary>
+        /// <summary>Heights are the placement's elevation plus the model's own Z, above sea level.</summary>
         AboveSeaLevel,
     }
 
@@ -26,10 +26,10 @@ namespace RevitGeoExport.Core
         private readonly double _anchorElevation;
         private readonly double _modelMinZ;
 
-        public AltitudeResolver(ExportOptions options, GeoAnchor anchor, IEnumerable<GeoMesh> meshes)
+        public AltitudeResolver(ExportOptions options, IGeoPlacement placement, IEnumerable<GeoMesh> meshes)
         {
             _options = options;
-            _anchorElevation = anchor.ElevationMeters;
+            _anchorElevation = placement.ElevationMeters;
             var zs = meshes.SelectMany(m => m.Vertices).Select(v => v.Z).ToList();
             _modelMinZ = zs.Count == 0 ? 0 : zs.Min();
         }

@@ -14,20 +14,20 @@ namespace RevitGeoExport.Core
     /// </summary>
     public static class KmlWriter
     {
-        public static void WriteKmz(string path, GeoAnchor anchor, IReadOnlyCollection<GeoMesh> meshes, ExportOptions options)
+        public static void WriteKmz(string path, IGeoPlacement placement, IReadOnlyCollection<GeoMesh> meshes, ExportOptions options)
         {
             using (var file = File.Create(path))
             using (var zip = new ZipArchive(file, ZipArchiveMode.Create))
             using (var entry = zip.CreateEntry("doc.kml", CompressionLevel.Optimal).Open())
             {
-                WriteKml(entry, anchor, meshes, options);
+                WriteKml(entry, placement, meshes, options);
             }
         }
 
-        public static void WriteKml(Stream stream, GeoAnchor anchor, IReadOnlyCollection<GeoMesh> meshes, ExportOptions options)
+        public static void WriteKml(Stream stream, IGeoPlacement placement, IReadOnlyCollection<GeoMesh> meshes, ExportOptions options)
         {
-            var converter = new GeoConverter(anchor);
-            var altitude = new AltitudeResolver(options, anchor, meshes);
+            var altitude = new AltitudeResolver(options, placement, meshes);
+            var center = placement.Center(meshes);
             string altitudeMode = altitude.IsRelativeToGround ? "relativeToGround" : "absolute";
 
             var settings = new XmlWriterSettings { Indent = true, Encoding = new UTF8Encoding(false) };
@@ -39,20 +39,20 @@ namespace RevitGeoExport.Core
                 xml.WriteElementString("name", options.DocumentName);
                 xml.WriteElementString("open", "1");
 
-                WriteLookAt(xml, anchor, meshes);
+                WriteLookAt(xml, center, meshes);
 
                 var categories = meshes.Select(m => m.Category).Distinct().OrderBy(c => c).ToList();
                 foreach (var category in categories)
                     WriteStyle(xml, category);
 
-                WriteAnchorPlacemark(xml, anchor);
+                WriteLocationPlacemark(xml, center, placement);
 
                 foreach (var group in meshes.GroupBy(m => m.Category).OrderBy(g => g.Key))
                 {
                     xml.WriteStartElement("Folder");
                     xml.WriteElementString("name", group.Key);
                     foreach (var mesh in group)
-                        WriteMeshPlacemark(xml, mesh, converter, altitude, altitudeMode);
+                        WriteMeshPlacemark(xml, mesh, placement, altitude, altitudeMode);
                     xml.WriteEndElement();
                 }
 
@@ -61,7 +61,7 @@ namespace RevitGeoExport.Core
             }
         }
 
-        private static void WriteLookAt(XmlWriter xml, GeoAnchor anchor, IReadOnlyCollection<GeoMesh> meshes)
+        private static void WriteLookAt(XmlWriter xml, (double Longitude, double Latitude) center, IReadOnlyCollection<GeoMesh> meshes)
         {
             // Frame the model: distance from the camera grows with the model's extent.
             double extent = 50;
@@ -74,8 +74,8 @@ namespace RevitGeoExport.Core
             }
 
             xml.WriteStartElement("LookAt");
-            xml.WriteElementString("longitude", Format(anchor.LongitudeDegrees));
-            xml.WriteElementString("latitude", Format(anchor.LatitudeDegrees));
+            xml.WriteElementString("longitude", Format(center.Longitude));
+            xml.WriteElementString("latitude", Format(center.Latitude));
             xml.WriteElementString("altitude", "0");
             xml.WriteElementString("heading", "0");
             xml.WriteElementString("tilt", "55");
@@ -97,19 +97,18 @@ namespace RevitGeoExport.Core
             xml.WriteEndElement();
         }
 
-        private static void WriteAnchorPlacemark(XmlWriter xml, GeoAnchor anchor)
+        private static void WriteLocationPlacemark(XmlWriter xml, (double Longitude, double Latitude) center, IGeoPlacement placement)
         {
             xml.WriteStartElement("Placemark");
-            xml.WriteElementString("name", "Model anchor");
-            xml.WriteElementString("description",
-                $"Latitude {Format(anchor.LatitudeDegrees)}, longitude {Format(anchor.LongitudeDegrees)}, rotation {Format(anchor.RotationDegrees)}°");
+            xml.WriteElementString("name", "Model location");
+            xml.WriteElementString("description", placement.Description);
             xml.WriteStartElement("Point");
-            xml.WriteElementString("coordinates", $"{Format(anchor.LongitudeDegrees)},{Format(anchor.LatitudeDegrees)},0");
+            xml.WriteElementString("coordinates", $"{Format(center.Longitude)},{Format(center.Latitude)},0");
             xml.WriteEndElement();
             xml.WriteEndElement();
         }
 
-        private static void WriteMeshPlacemark(XmlWriter xml, GeoMesh mesh, GeoConverter converter, AltitudeResolver altitude, string altitudeMode)
+        private static void WriteMeshPlacemark(XmlWriter xml, GeoMesh mesh, IGeoPlacement placement, AltitudeResolver altitude, string altitudeMode)
         {
             if (mesh.TriangleCount == 0)
                 return;
@@ -128,7 +127,7 @@ namespace RevitGeoExport.Core
                 {
                     // A KML ring repeats its first point to close it.
                     var v = mesh.Vertices[mesh.Indices[t * 3 + corner % 3]];
-                    var (lon, lat) = converter.ToLonLat(v.X, v.Y);
+                    var (lon, lat) = placement.ToLonLat(v.X, v.Y);
                     if (corner > 0)
                         ring.Append(' ');
                     ring.Append(Format(lon, 8)).Append(',').Append(Format(lat, 8)).Append(',').Append(Format(altitude.Resolve(v.Z), 3));

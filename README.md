@@ -13,6 +13,31 @@ It adds a **Place on Map** button to the **Add-Ins** tab. Clicking it exports:
 
 ## How the position is worked out
 
+### Automatic: the model is already in real coordinates
+
+If your shared coordinates are real survey eastings/northings, the model places itself and
+you only press **Export**. The add-in checks, in order:
+
+1. **The GIS coordinate system assigned in Revit** (set when you acquire coordinates from
+   Civil 3D, a DWG with a coordinate system, or ACC). For example `UTM84-45N`, `WGS84.UTM-45N`,
+   `UTM83-10`, `ETRS89.UTM-32N` or an EPSG code.
+2. **The shared coordinates themselves.** If the project base point has shared coordinates
+   in the hundreds of thousands, they are tried as UTM in the zone of the Revit site location
+   (*Manage › Location*). They are used only if they land within 50 km of that location.
+
+The detected system fills the *Coordinate system (EPSG)* field, and the manual latitude/longitude
+fields are disabled. You can also type a code yourself, e.g. `32645` (UTM 45N, used across
+eastern India). Supported systems: UTM on WGS84 (`326xx` north, `327xx` south), NAD83 (`269xx`),
+ETRS89 (`258xx`), GDA94/GDA2020 MGA (`283xx`/`78xx`) and Web Mercator (`3857`). These datums are
+treated as WGS84, which is within about 2 m. Others, such as British National Grid or US State
+Plane, need the manual method below.
+
+In this mode the shared Z is used as the elevation, so *Height of Z = 0 above sea* starts at 0.
+
+### Manual: place by latitude/longitude
+
+Clear the *Coordinate system* field to use this.
+
 1. **Latitude/longitude** come from *Manage › Location* (Revit's site location). You can
    override them in the dialog. Paste them straight from Google Maps (right-click a spot
    and click the coordinates to copy `lat, lon`).
@@ -22,11 +47,11 @@ It adds a **Place on Map** button to the **Add-Ins** tab. Clicking it exports:
    *Manage › Position › Rotate True North* or *Acquire Coordinates* is respected.
    *Rotation adjustment* adds an extra clockwise rotation for fine-tuning against the imagery.
 4. **Height**: *Sit on the terrain* puts the lowest point of the model on the ground
-   (best for Google Earth). *Above sea level* uses the anchor elevation plus the model's Z.
+   (best for Google Earth). *Above sea level* adds the model's Z to *Height of Z = 0 above sea*.
    *Vertical offset* shifts the model up or down.
 
 The maths converts local east/north metres to WGS84 through ECEF, so it stays accurate
-over large sites. Tick *Save these coordinates to the Revit project location* to write
+over large sites. UTM uses the Krüger series and matches PROJ to about 1 cm. Tick *Save these coordinates to the Revit project location* to write
 the latitude/longitude back into the model.
 
 If the active view is a 3D view, only what that view shows is exported (hidden

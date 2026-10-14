@@ -11,17 +11,17 @@ namespace RevitGeoExport.Core
     /// </summary>
     public static class GeoJsonWriter
     {
-        public static string ToGeoJson(GeoAnchor anchor, IReadOnlyCollection<GeoMesh> meshes, ExportOptions options)
+        public static string ToGeoJson(IGeoPlacement placement, IReadOnlyCollection<GeoMesh> meshes, ExportOptions options)
         {
-            var converter = new GeoConverter(anchor);
-            var altitude = new AltitudeResolver(options, anchor, meshes);
+            var altitude = new AltitudeResolver(options, placement, meshes);
+            var center = placement.Center(meshes);
             var json = new StringBuilder();
 
             json.Append("{\"type\":\"FeatureCollection\",");
             json.Append("\"name\":").Append(Quote(options.DocumentName)).Append(',');
-            json.Append("\"anchor\":{\"longitude\":").Append(KmlWriter.Format(anchor.LongitudeDegrees))
-                .Append(",\"latitude\":").Append(KmlWriter.Format(anchor.LatitudeDegrees))
-                .Append(",\"rotation\":").Append(KmlWriter.Format(anchor.RotationDegrees)).Append("},");
+            json.Append("\"placement\":").Append(Quote(placement.Description)).Append(',');
+            json.Append("\"center\":{\"longitude\":").Append(KmlWriter.Format(center.Longitude))
+                .Append(",\"latitude\":").Append(KmlWriter.Format(center.Latitude)).Append("},");
             json.Append("\"features\":[");
 
             bool first = true;
@@ -52,7 +52,7 @@ namespace RevitGeoExport.Core
                 for (int i = 0; i <= hull.Count; i++)
                 {
                     var (east, north) = hull[i % hull.Count];
-                    var (lon, lat) = converter.ToLonLat(east, north);
+                    var (lon, lat) = placement.ToLonLat(east, north);
                     if (i > 0)
                         json.Append(',');
                     json.Append('[').Append(KmlWriter.Format(lon)).Append(',').Append(KmlWriter.Format(lat)).Append(']');
@@ -65,8 +65,8 @@ namespace RevitGeoExport.Core
             return json.ToString();
         }
 
-        public static void Write(string path, GeoAnchor anchor, IReadOnlyCollection<GeoMesh> meshes, ExportOptions options) =>
-            File.WriteAllText(path, ToGeoJson(anchor, meshes, options), new UTF8Encoding(false));
+        public static void Write(string path, IGeoPlacement placement, IReadOnlyCollection<GeoMesh> meshes, ExportOptions options) =>
+            File.WriteAllText(path, ToGeoJson(placement, meshes, options), new UTF8Encoding(false));
 
         internal static string Quote(string value)
         {

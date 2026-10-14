@@ -48,14 +48,17 @@ namespace RevitGeoExport
             if (view != null && view.IsTemplate)
                 view = null;
 
-            var meshes = RevitModelReader.Read(doc, view, location.LocalFrame(settings.Anchor));
+            var frame = settings.Crs != null ? location.ProjectedFrame() : location.LocalFrame(settings.Anchor);
+            var meshes = RevitModelReader.Read(doc, view, frame);
             if (meshes.Count == 0)
             {
                 message = "No 3D model geometry was found to export.";
                 return Result.Failed;
             }
 
-            var anchor = new GeoAnchor(settings.Latitude, settings.Longitude, settings.SiteElevationMeters, settings.RotationDegrees);
+            IGeoPlacement placement = settings.Crs != null
+                ? new ProjectedPlacement(settings.Crs, settings.SiteElevationMeters)
+                : new GeoConverter(new GeoAnchor(settings.Latitude, settings.Longitude, settings.SiteElevationMeters, settings.RotationDegrees));
             var options = new ExportOptions
             {
                 DocumentName = title,
@@ -68,11 +71,11 @@ namespace RevitGeoExport
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(settings.OutputBasePath)));
                 if (settings.WriteKmz)
-                    written.Add(Write(settings.OutputBasePath + ".kmz", p => KmlWriter.WriteKmz(p, anchor, meshes, options)));
+                    written.Add(Write(settings.OutputBasePath + ".kmz", p => KmlWriter.WriteKmz(p, placement, meshes, options)));
                 if (settings.WriteGeoJson)
-                    written.Add(Write(settings.OutputBasePath + ".geojson", p => GeoJsonWriter.Write(p, anchor, meshes, options)));
+                    written.Add(Write(settings.OutputBasePath + ".geojson", p => GeoJsonWriter.Write(p, placement, meshes, options)));
                 if (settings.WriteWebMap)
-                    written.Add(Write(settings.OutputBasePath + "_map.html", p => WebMapWriter.Write(p, anchor, meshes, options)));
+                    written.Add(Write(settings.OutputBasePath + "_map.html", p => WebMapWriter.Write(p, placement, meshes, options)));
             }
             catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
             {
@@ -80,7 +83,7 @@ namespace RevitGeoExport
                 return Result.Failed;
             }
 
-            ShowResult(meshes, view, written);
+            ShowResult(meshes, view, placement, written);
             return Result.Succeeded;
         }
 
@@ -101,13 +104,14 @@ namespace RevitGeoExport
             }
         }
 
-        private static void ShowResult(List<GeoMesh> meshes, View3D view, List<string> written)
+        private static void ShowResult(List<GeoMesh> meshes, View3D view, IGeoPlacement placement, List<string> written)
         {
             int triangles = meshes.Sum(m => m.TriangleCount);
             var dialog = new TaskDialog("Place model on map")
             {
                 MainInstruction = $"Exported {meshes.Count:N0} elements ({triangles:N0} triangles)",
                 MainContent = (view != null ? $"Source: 3D view \"{view.Name}\".\n" : "Source: whole model (open a 3D view to export only what it shows).\n")
+                    + placement.Description + ".\n"
                     + string.Join("\n", written),
             };
 

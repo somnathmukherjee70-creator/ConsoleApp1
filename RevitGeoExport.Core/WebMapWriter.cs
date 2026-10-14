@@ -13,16 +13,16 @@ namespace RevitGeoExport.Core
     {
         private const string Placeholder = "/*__MODEL_GEOJSON__*/null";
 
-        public static string ToHtml(GeoAnchor anchor, IReadOnlyCollection<GeoMesh> meshes, ExportOptions options)
+        public static string ToHtml(IGeoPlacement placement, IReadOnlyCollection<GeoMesh> meshes, ExportOptions options)
         {
             string template = LoadTemplate();
             return template
                 .Replace("__MODEL_TITLE__", System.Net.WebUtility.HtmlEncode(options.DocumentName))
-                .Replace(Placeholder, GeoJsonWriter.ToGeoJson(anchor, meshes, options));
+                .Replace(Placeholder, GeoJsonWriter.ToGeoJson(placement, meshes, options));
         }
 
-        public static void Write(string path, GeoAnchor anchor, IReadOnlyCollection<GeoMesh> meshes, ExportOptions options) =>
-            File.WriteAllText(path, ToHtml(anchor, meshes, options), new UTF8Encoding(false));
+        public static void Write(string path, IGeoPlacement placement, IReadOnlyCollection<GeoMesh> meshes, ExportOptions options) =>
+            File.WriteAllText(path, ToHtml(placement, meshes, options), new UTF8Encoding(false));
 
         internal static string LoadTemplate()
         {

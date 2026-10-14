@@ -3,7 +3,7 @@ using System;
 namespace RevitGeoExport.Core
 {
     /// <summary>Converts local East-North-Up offsets around a <see cref="GeoAnchor"/> to WGS84 coordinates.</summary>
-    public sealed class GeoConverter
+    public sealed class GeoConverter : IGeoPlacement
     {
         // WGS84 ellipsoid.
         private const double A = 6378137.0;
@@ -39,6 +39,12 @@ namespace RevitGeoExport.Core
         }
 
         public GeoAnchor Anchor => _anchor;
+
+        public double ElevationMeters => _anchor.ElevationMeters;
+
+        public string Description => string.Format(System.Globalization.CultureInfo.InvariantCulture,
+            "Anchored at latitude {0:0.#######}, longitude {1:0.#######}, rotated {2:0.##}° clockwise",
+            _anchor.LatitudeDegrees, _anchor.LongitudeDegrees, _anchor.RotationDegrees);
 
         /// <summary>Applies the anchor's extra rotation to a local point.</summary>
         public Vec3 Rotate(Vec3 local) =>

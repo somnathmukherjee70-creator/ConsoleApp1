@@ -8,7 +8,7 @@ namespace RevitGeoExport.Core.Tests;
 
 public class WriterTests
 {
-    private static readonly GeoAnchor Anchor = new(22.544808, 88.342558, elevationMeters: 10);
+    private static readonly IGeoPlacement Anchor = new GeoConverter(new GeoAnchor(22.544808, 88.342558, elevationMeters: 10));
 
     private static List<GeoMesh> Box()
     {
@@ -107,5 +107,26 @@ public class WriterTests
         Assert.DoesNotContain("</script><b>", html);
         Assert.Contains("Tower &amp; Annex", html);
         Assert.Contains("\"elementId\":\"123\"", html);
+    }
+}
+
+public class ProjectedWriterTests
+{
+    [Fact]
+    public void Model_in_utm_coordinates_lands_on_its_real_position()
+    {
+        // A 20 m box at Victoria Memorial, Kolkata, modelled directly in UTM 45N eastings/northings.
+        var mesh = new GeoMesh("1", "Block", "Walls");
+        double e = 638053.3884, n = 2493751.7931;
+        mesh.AddTriangle(new Vec3(e - 10, n - 10, 0), new Vec3(e + 10, n - 10, 0), new Vec3(e + 10, n + 10, 6));
+        mesh.AddTriangle(new Vec3(e - 10, n - 10, 0), new Vec3(e + 10, n + 10, 6), new Vec3(e - 10, n + 10, 6));
+
+        var placement = new ProjectedPlacement(ProjectedCrs.Utm(45, south: false));
+        using var doc = JsonDocument.Parse(GeoJsonWriter.ToGeoJson(placement, new[] { mesh }, new ExportOptions()));
+
+        var center = doc.RootElement.GetProperty("center");
+        Assert.Equal(22.544808, center.GetProperty("latitude").GetDouble(), 6);
+        Assert.Equal(88.342558, center.GetProperty("longitude").GetDouble(), 6);
+        Assert.Contains("EPSG:32645", doc.RootElement.GetProperty("placement").GetString());
     }
 }
