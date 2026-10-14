@@ -13,6 +13,8 @@ public class ProjectedCrsTests
     [InlineData(25832, 52.516275, 13.377704, 796987.2743, 5827473.0897)]   // Berlin, ETRS89 UTM 32N (far from the central meridian)
     [InlineData(7856, -33.856784, 151.215297, 334900.2613, 6252290.5225)]  // Sydney, GDA2020 MGA 56
     [InlineData(32631, 0.5, 4.1, 622405.3991, 55275.2918)]                 // Near the equator
+    [InlineData(3997, 25.149071, 55.203167, 486875.5884, 2782573.6954)]   // Dubai, Dubai Local TM
+    [InlineData(32640, 25.149071, 55.203167, 318882.3863, 2782661.5184)]  // Dubai, UTM 40N
     [InlineData(3857, 40.689247, -74.044502, -8242596.2587, 4966613.1574)] // New York, Web Mercator
     public void Matches_proj(int epsg, double lat, double lon, double easting, double northing)
     {
@@ -37,6 +39,8 @@ public class ProjectedCrsTests
     [InlineData("ETRS89.UTM-32N", 25832)]
     [InlineData("GDA2020.UTM-56", 7856)]
     [InlineData("WGS84.PseudoMercator", 3857)]
+    [InlineData("DubaiLocalTM", 3997)]
+    [InlineData("3997", 3997)]
     [InlineData("PROJCS[\"WGS 84 / UTM zone 45N\",GEOGCS[\"WGS 84\",AUTHORITY[\"EPSG\",\"4326\"]],AUTHORITY[\"EPSG\",\"32645\"]]", 32645)]
     public void Parses_revit_and_epsg_names(string text, int epsg)
     {
@@ -56,4 +60,12 @@ public class ProjectedCrsTests
     [InlineData(180, 60)]
     [InlineData(-180, 1)]
     public void Finds_utm_zone(double lon, int zone) => Assert.Equal(zone, ProjectedCrs.UtmZoneFor(lon));
+
+    [Fact]
+    public void Dubai_candidates_include_dltm_and_utm_40()
+    {
+        var codes = ProjectedCrs.CandidatesNear(25.149, 55.203).Select(c => c.Epsg).ToList();
+        Assert.Contains(3997, codes);
+        Assert.Equal(32640, codes[0]);
+    }
 }

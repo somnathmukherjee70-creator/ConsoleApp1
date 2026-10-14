@@ -99,7 +99,7 @@ namespace RevitGeoExport
                 return;
             }
 
-            // 2. Shared coordinates that look like UTM eastings/northings for the Revit site location's zone.
+            // 2. Shared coordinates that land near the Revit site location in a grid used there (UTM zones, local grids).
             var shared = ProjectBasePointShared;
             if (Math.Abs(shared.X) * FeetToMeters < RealCoordinateThresholdMeters && Math.Abs(shared.Y) * FeetToMeters < RealCoordinateThresholdMeters)
                 shared = ToShared.OfPoint(XYZ.Zero);
@@ -110,16 +110,28 @@ namespace RevitGeoExport
                 return;
             }
 
-            var utm = ProjectedCrs.Utm(ProjectedCrs.UtmZoneFor(LongitudeDegrees), south: LatitudeDegrees < 0);
-            var (lon, lat) = utm.ToLonLat(east, north);
-            if (DistanceMeters(lat, lon, LatitudeDegrees, LongitudeDegrees) <= UtmMatchToleranceMeters)
+            ProjectedCrs best = null;
+            double bestDistance = UtmMatchToleranceMeters;
+            foreach (var candidate in ProjectedCrs.CandidatesNear(LatitudeDegrees, LongitudeDegrees))
             {
-                DetectedCrs = utm;
-                DetectionNote = $"The shared coordinates are UTM eastings/northings near {PlaceName}.";
+                var (lon, lat) = candidate.ToLonLat(east, north);
+                double distance = DistanceMeters(lat, lon, LatitudeDegrees, LongitudeDegrees);
+                if (distance <= bestDistance)
+                {
+                    best = candidate;
+                    bestDistance = distance;
+                }
+            }
+
+            string coordinates = string.Format(System.Globalization.CultureInfo.InvariantCulture, "E {0:N0}, N {1:N0}", east, north);
+            if (best != null)
+            {
+                DetectedCrs = best;
+                DetectionNote = $"Shared coordinates {coordinates} match {best.Name} near {PlaceName}.";
             }
             else
             {
-                DetectionNote = "The shared coordinates look like real eastings/northings. Enter their EPSG code (e.g. 32645 for UTM 45N) to place the model by them.";
+                DetectionNote = $"The shared coordinates ({coordinates}) look like real eastings/northings but don't match a known grid near the Revit location. Enter their EPSG code to place the model by them.";
             }
         }
 

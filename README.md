@@ -22,13 +22,15 @@ you only press **Export**. The add-in checks, in order:
    Civil 3D, a DWG with a coordinate system, or ACC). For example `UTM84-45N`, `WGS84.UTM-45N`,
    `UTM83-10`, `ETRS89.UTM-32N` or an EPSG code.
 2. **The shared coordinates themselves.** If the project base point has shared coordinates
-   in the hundreds of thousands, they are tried as UTM in the zone of the Revit site location
-   (*Manage › Location*). They are used only if they land within 50 km of that location.
+   in the hundreds of thousands, they are tried in the grids used around the Revit site location
+   (*Manage › Location*): its UTM zone, the neighbouring zones, and local grids such as Dubai
+   DLTM. They are used only if they land within 50 km of that location.
 
 The detected system fills the *Coordinate system (EPSG)* field, and the manual latitude/longitude
 fields are disabled. You can also type a code yourself, e.g. `32645` (UTM 45N, used across
 eastern India). Supported systems: UTM on WGS84 (`326xx` north, `327xx` south), NAD83 (`269xx`),
-ETRS89 (`258xx`), GDA94/GDA2020 MGA (`283xx`/`78xx`) and Web Mercator (`3857`). These datums are
+ETRS89 (`258xx`), GDA94/GDA2020 MGA (`283xx`/`78xx`), Dubai Local TM / DLTM (`3997`) and
+Web Mercator (`3857`). These datums are
 treated as WGS84, which is within about 2 m. Others, such as British National Grid or US State
 Plane, need the manual method below.
 

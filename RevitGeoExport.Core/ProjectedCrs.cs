@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Text.RegularExpressions;
 
@@ -7,7 +8,7 @@ namespace RevitGeoExport.Core
     /// <summary>
     /// A projected coordinate system the exporter can convert from, so a model whose shared
     /// coordinates are real eastings/northings can be placed without entering a latitude/longitude.
-    /// Supports UTM on WGS84, NAD83, ETRS89, GDA94 and GDA2020, and Web Mercator. These datums are
+    /// Supports UTM on WGS84, NAD83, ETRS89, GDA94 and GDA2020, Dubai Local TM (DLTM) and Web Mercator. These datums are
     /// treated as WGS84, which is within about 2 m and invisible at map scale.
     /// </summary>
     public sealed class ProjectedCrs
@@ -17,7 +18,8 @@ namespace RevitGeoExport.Core
         // WGS84 / GRS80 (identical to well under a millimetre for this purpose).
         private const double A = 6378137.0;
         private const double F = 1 / 298.257223563;
-        private const double K0 = 0.9996;
+        private const double UtmScale = 0.9996;
+        private const int DltmEpsg = 3997;
 
         // Krüger series coefficients, from the third flattening n.
         private const double N = F / (2 - F);
@@ -29,9 +31,11 @@ namespace RevitGeoExport.Core
         private readonly bool _webMercator;
         private readonly double _centralMeridian;
         private readonly double _falseNorthing;
+        private readonly double _k0;
 
-        private ProjectedCrs(int epsg, string name, bool webMercator, double centralMeridianDegrees = 0, double falseNorthing = 0)
+        private ProjectedCrs(int epsg, string name, bool webMercator, double centralMeridianDegrees = 0, double falseNorthing = 0, double scale = UtmScale)
         {
+            _k0 = scale;
             Epsg = epsg;
             Name = name;
             _webMercator = webMercator;
@@ -51,6 +55,13 @@ namespace RevitGeoExport.Core
                 return true;
             }
 
+            if (epsg == DltmEpsg)
+            {
+                // Dubai Local Transverse Mercator: central meridian 55°20' E, scale 1.
+                crs = new ProjectedCrs(epsg, "WGS 84 / Dubai Local TM", webMercator: false, centralMeridianDegrees: 55 + 1.0 / 3, scale: 1.0);
+                return true;
+            }
+
             if (!TryGetUtmZone(epsg, out string datum, out int zone, out bool south))
                 return false;
 
@@ -61,6 +72,22 @@ namespace RevitGeoExport.Core
 
         public static ProjectedCrs Utm(int zone, bool south) =>
             TryCreate((south ? 32700 : 32600) + zone, out var crs) ? crs : throw new ArgumentOutOfRangeException(nameof(zone));
+
+        /// <summary>
+        /// Coordinate systems a survey near this location is likely to use: its UTM zone, the
+        /// neighbouring zones (sites near a zone edge often use the next one), and local grids.
+        /// </summary>
+        public static IEnumerable<ProjectedCrs> CandidatesNear(double latitudeDegrees, double longitudeDegrees)
+        {
+            bool south = latitudeDegrees < 0;
+            int zone = UtmZoneFor(longitudeDegrees);
+            yield return Utm(zone, south);
+            if (zone > 1) yield return Utm(zone - 1, south);
+            if (zone < 60) yield return Utm(zone + 1, south);
+
+            if (latitudeDegrees > 22 && latitudeDegrees < 27 && longitudeDegrees > 51 && longitudeDegrees < 57 && TryCreate(3997, out var dltm))
+                yield return dltm;
+        }
 
         /// <summary>The WGS84 UTM zone containing a longitude.</summary>
         public static int UtmZoneFor(double longitudeDegrees) =>
@@ -91,6 +118,9 @@ namespace RevitGeoExport.Core
                 return TryCreate(UtmEpsg(datum, zone, south), out crs);
             }
 
+            if (Regex.IsMatch(text, @"Dubai|DLTM", RegexOptions.IgnoreCase))
+                return TryCreate(3997, out crs);
+
             if (Regex.IsMatch(text, @"PseudoMercator|Pseudo-Mercator|WebMercator|Web Mercator", RegexOptions.IgnoreCase))
                 return TryCreate(3857, out crs);
 
@@ -112,8 +142,8 @@ namespace RevitGeoExport.Core
                 return (easting / A / DegToRad, Math.Atan(Math.Sinh(northing / A)) / DegToRad);
 
             // Inverse transverse Mercator, Krüger series (millimetre accuracy across a whole UTM zone).
-            double xi = (northing - _falseNorthing) / (K0 * Rectifying);
-            double eta = (easting - 500_000) / (K0 * Rectifying);
+            double xi = (northing - _falseNorthing) / (_k0 * Rectifying);
+            double eta = (easting - 500_000) / (_k0 * Rectifying);
             double xiP = xi, etaP = eta;
             for (int j = 1; j <= 3; j++)
             {
@@ -151,8 +181,8 @@ namespace RevitGeoExport.Core
                 eta += Alpha[j - 1] * Math.Cos(2 * j * xiP) * Math.Sinh(2 * j * etaP);
             }
 
-            double x = K0 * Rectifying * eta;
-            double y = K0 * Rectifying * xi;
+            double x = _k0 * Rectifying * eta;
+            double y = _k0 * Rectifying * xi;
             return (x + 500_000, y + _falseNorthing);
         }
 
