@@ -863,7 +863,7 @@ async function loadIfc(file, append) {
     console.error(err);
     const offline = /fetch|import|wasm|module|network/i.test(String(err?.message || err));
     toast(offline
-      ? `The IFC engine couldn't load. It is fetched from cdn.jsdelivr.net, so this page needs network access to that site. Open BimViewer/index.html from a local web server to read IFC files.`
+      ? `The IFC engine couldn't load. It is downloaded from cdn.jsdelivr.net, so check your internet connection and try again.`
       : `Couldn't open ${file.name}: ${err.message || err}`, true);
     if (fileRec && M.files.includes(fileRec) && !fileRec.removed) {
       if (liveFiles().length > 1) removeFile(fileRec);
