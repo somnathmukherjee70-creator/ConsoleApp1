@@ -8,7 +8,8 @@ namespace RevitGeoExport.Core
     /// <summary>
     /// A projected coordinate system the exporter can convert from, so a model whose shared
     /// coordinates are real eastings/northings can be placed without entering a latitude/longitude.
-    /// Supports UTM on WGS84, NAD83, ETRS89, GDA94 and GDA2020, Dubai Local TM (DLTM) and Web Mercator. These datums are
+    /// Supports UTM on WGS84, NAD83, ETRS89, GDA94 and GDA2020, Dubai Local TM (DLTM), Pennsylvania
+    /// State Plane and Web Mercator. Coordinates are in the system's own units (metres or US survey feet). These datums are
     /// treated as WGS84, which is within about 2 m and invisible at map scale.
     /// </summary>
     public sealed class ProjectedCrs
@@ -32,6 +33,7 @@ namespace RevitGeoExport.Core
         private readonly double _centralMeridian;
         private readonly double _falseNorthing;
         private readonly double _k0;
+        private readonly LambertConic _lambert;
 
         private ProjectedCrs(int epsg, string name, bool webMercator, double centralMeridianDegrees = 0, double falseNorthing = 0, double scale = UtmScale)
         {
@@ -43,8 +45,21 @@ namespace RevitGeoExport.Core
             _falseNorthing = falseNorthing;
         }
 
+        private ProjectedCrs(int epsg, string name, LambertConic lambert)
+        {
+            Epsg = epsg;
+            Name = name;
+            _lambert = lambert;
+            UnitMeters = lambert.UnitMeters;
+        }
+
         public int Epsg { get; }
         public string Name { get; }
+
+        /// <summary>Length of one coordinate unit in metres: 1, or 1200/3937 for US survey feet.</summary>
+        public double UnitMeters { get; } = 1;
+
+        public bool IsUsSurveyFeet => UnitMeters != 1;
 
         public static bool TryCreate(int epsg, out ProjectedCrs crs)
         {
@@ -59,6 +74,12 @@ namespace RevitGeoExport.Core
             {
                 // Dubai Local Transverse Mercator: central meridian 55°20' E, scale 1.
                 crs = new ProjectedCrs(epsg, "WGS 84 / Dubai Local TM", webMercator: false, centralMeridianDegrees: 55 + 1.0 / 3, scale: 1.0);
+                return true;
+            }
+
+            if (LambertConic.TryCreate(epsg, out string lambertName, out var lambert))
+            {
+                crs = new ProjectedCrs(epsg, lambertName, lambert);
                 return true;
             }
 
@@ -87,6 +108,14 @@ namespace RevitGeoExport.Core
 
             if (latitudeDegrees > 22 && latitudeDegrees < 27 && longitudeDegrees > 51 && longitudeDegrees < 57 && TryCreate(3997, out var dltm))
                 yield return dltm;
+
+            // Pennsylvania State Plane, US survey feet first as most PA surveys use it.
+            if (latitudeDegrees > 39.5 && latitudeDegrees < 42.5 && longitudeDegrees > -81 && longitudeDegrees < -74.5)
+            {
+                foreach (int code in new[] { 2272, 2271, 32129, 32128 })
+                    if (TryCreate(code, out var statePlane))
+                        yield return statePlane;
+            }
         }
 
         /// <summary>The WGS84 UTM zone containing a longitude.</summary>
@@ -138,6 +167,8 @@ namespace RevitGeoExport.Core
         /// <summary>Converts easting/northing in metres to longitude/latitude in degrees.</summary>
         public (double Longitude, double Latitude) ToLonLat(double easting, double northing)
         {
+            if (_lambert != null)
+                return _lambert.Inverse(easting * UnitMeters, northing * UnitMeters);
             if (_webMercator)
                 return (easting / A / DegToRad, Math.Atan(Math.Sinh(northing / A)) / DegToRad);
 
@@ -165,6 +196,12 @@ namespace RevitGeoExport.Core
         {
             double phi = latitudeDegrees * DegToRad;
             double lambda = longitudeDegrees * DegToRad;
+            if (_lambert != null)
+            {
+                var (lx, ly) = _lambert.Forward(phi, lambda);
+                return (lx / UnitMeters, ly / UnitMeters);
+            }
+
             if (_webMercator)
                 return (A * lambda, A * Math.Log(Math.Tan(Math.PI / 4 + phi / 2)));
 
@@ -184,6 +221,76 @@ namespace RevitGeoExport.Core
             double x = _k0 * Rectifying * eta;
             double y = _k0 * Rectifying * xi;
             return (x + 500_000, y + _falseNorthing);
+        }
+
+        /// <summary>Lambert Conformal Conic with two standard parallels (EPSG method 9802, Snyder eqs. 15-1 to 15-11).</summary>
+        private sealed class LambertConic
+        {
+            private const double UsSurveyFoot = 1200.0 / 3937;
+            private static readonly double E = Math.Sqrt(F * (2 - F));
+
+            private readonly double _lon0, _falseEasting, _falseNorthing, _n, _af, _rho0;
+
+            private LambertConic(double lat0, double lon0, double lat1, double lat2, double falseEastingMeters, double unitMeters)
+            {
+                _lon0 = lon0 * DegToRad;
+                _falseEasting = falseEastingMeters;
+                UnitMeters = unitMeters;
+                double p1 = lat1 * DegToRad, p2 = lat2 * DegToRad;
+                _n = (Math.Log(M(p1)) - Math.Log(M(p2))) / (Math.Log(T(p1)) - Math.Log(T(p2)));
+                _af = A * M(p1) / (_n * Math.Pow(T(p1), _n));
+                _rho0 = _af * Math.Pow(T(lat0 * DegToRad), _n);
+            }
+
+            public double UnitMeters { get; }
+
+            public static bool TryCreate(int epsg, out string name, out LambertConic lambert)
+            {
+                // NAD83 Pennsylvania South / North, in US survey feet and metres.
+                switch (epsg)
+                {
+                    case 2272: name = "NAD83 / Pennsylvania South (ftUS)"; lambert = South(UsSurveyFoot); return true;
+                    case 32129: name = "NAD83 / Pennsylvania South"; lambert = South(1); return true;
+                    case 2271: name = "NAD83 / Pennsylvania North (ftUS)"; lambert = North(UsSurveyFoot); return true;
+                    case 32128: name = "NAD83 / Pennsylvania North"; lambert = North(1); return true;
+                    default: name = ""; lambert = null!; return false;
+                }
+            }
+
+            private static LambertConic South(double unit) => new LambertConic(39 + 20.0 / 60, -77.75, 40 + 58.0 / 60, 39 + 56.0 / 60, 600_000, unit);
+            private static LambertConic North(double unit) => new LambertConic(40 + 10.0 / 60, -77.75, 41 + 57.0 / 60, 40 + 53.0 / 60, 600_000, unit);
+
+            public (double X, double Y) Forward(double phi, double lambda)
+            {
+                double rho = _af * Math.Pow(T(phi), _n);
+                double theta = _n * (lambda - _lon0);
+                return (_falseEasting + rho * Math.Sin(theta), _falseNorthing + _rho0 - rho * Math.Cos(theta));
+            }
+
+            public (double Longitude, double Latitude) Inverse(double x, double y)
+            {
+                double dx = x - _falseEasting, dy = _rho0 - (y - _falseNorthing);
+                double rho = Math.Sign(_n) * Math.Sqrt(dx * dx + dy * dy);
+                double t = Math.Pow(rho / _af, 1 / _n);
+                double theta = Math.Atan2(dx, dy);
+
+                double phi = Math.PI / 2 - 2 * Math.Atan(t);
+                for (int i = 0; i < 10; i++)
+                {
+                    double es = E * Math.Sin(phi);
+                    phi = Math.PI / 2 - 2 * Math.Atan(t * Math.Pow((1 - es) / (1 + es), E / 2));
+                }
+
+                return ((theta / _n + _lon0) / DegToRad, phi / DegToRad);
+            }
+
+            private static double M(double phi) => Math.Cos(phi) / Math.Sqrt(1 - E * E * Math.Sin(phi) * Math.Sin(phi));
+
+            private static double T(double phi)
+            {
+                double es = E * Math.Sin(phi);
+                return Math.Tan(Math.PI / 4 - phi / 2) / Math.Pow((1 - es) / (1 + es), E / 2);
+            }
         }
 
         // Math.Atanh is not in netstandard2.0.

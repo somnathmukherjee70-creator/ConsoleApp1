@@ -31,10 +31,12 @@ you only press **Export**. The add-in checks, in order:
 The detected system fills the *Coordinate system (EPSG)* field, and the manual latitude/longitude
 fields are disabled. You can also type a code yourself, e.g. `32645` (UTM 45N, used across
 eastern India). Supported systems: UTM on WGS84 (`326xx` north, `327xx` south), NAD83 (`269xx`),
-ETRS89 (`258xx`), GDA94/GDA2020 MGA (`283xx`/`78xx`), Dubai Local TM / DLTM (`3997`) and
-Web Mercator (`3857`). These datums are
-treated as WGS84, which is within about 2 m. Others, such as British National Grid or US State
-Plane, need the manual method below.
+ETRS89 (`258xx`), GDA94/GDA2020 MGA (`283xx`/`78xx`), Dubai Local TM / DLTM (`3997`),
+Pennsylvania State Plane South/North (`2272`/`2271` in US survey feet, `32129`/`32128` in metres)
+and Web Mercator (`3857`). For US-survey-foot grids, type the survey's foot values into Revit as
+ordinary feet; the add-in accounts for the 2 ppm difference. These datums are
+treated as WGS84, which is within about 2 m. Others, such as British National Grid or other US
+State Plane zones, need the manual method below.
 
 In this mode the shared Z is used as the elevation, so *Height of Z = 0 above sea* starts at 0.
 

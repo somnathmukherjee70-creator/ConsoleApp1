@@ -114,7 +114,8 @@ namespace RevitGeoExport
             double bestDistance = UtmMatchToleranceMeters;
             foreach (var candidate in ProjectedCrs.CandidatesNear(LatitudeDegrees, LongitudeDegrees))
             {
-                var (lon, lat) = candidate.ToLonLat(east, north);
+                // Through a placement, so feet-based grids read the Revit foot values correctly.
+                var (lon, lat) = new ProjectedPlacement(candidate).ToLonLat(east, north);
                 double distance = DistanceMeters(lat, lon, LatitudeDegrees, LongitudeDegrees);
                 if (distance <= bestDistance)
                 {
@@ -123,7 +124,8 @@ namespace RevitGeoExport
                 }
             }
 
-            string coordinates = string.Format(System.Globalization.CultureInfo.InvariantCulture, "E {0:N0}, N {1:N0}", east, north);
+            string coordinates = string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                "E {0:N0}, N {1:N0} ft", shared.X, shared.Y);
             if (best != null)
             {
                 DetectedCrs = best;

@@ -103,7 +103,7 @@ namespace RevitGeoExport
             bool parsed = ProjectedCrs.TryParse(_crs.Text, out var crs);
             _crsStatus.Text = !UsesCoordinateSystem ? detectionNote
                 : parsed ? $"Placed automatically by the model's shared coordinates in {crs}."
-                : "Not a supported coordinate system (UTM on WGS84/NAD83/ETRS89/GDA, Dubai DLTM 3997, or 3857).";
+                : "Not a supported coordinate system (UTM on WGS84/NAD83/ETRS89/GDA, Dubai DLTM 3997, Pennsylvania State Plane 2271/2272/32128/32129, or 3857).";
             _crsStatus.ForeColor = UsesCoordinateSystem && !parsed ? System.Drawing.Color.Firebrick : System.Drawing.SystemColors.GrayText;
 
             _coordinates.Enabled = _anchor.Enabled = _rotation.Enabled = _save.Enabled = !UsesCoordinateSystem;

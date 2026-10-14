@@ -15,6 +15,9 @@ public class ProjectedCrsTests
     [InlineData(32631, 0.5, 4.1, 622405.3991, 55275.2918)]                 // Near the equator
     [InlineData(3997, 25.149071, 55.203167, 486875.5884, 2782573.6954)]   // Dubai, Dubai Local TM
     [InlineData(32640, 25.149071, 55.203167, 318882.3863, 2782661.5184)]  // Dubai, UTM 40N
+    [InlineData(2272, 40.0223719, -79.8866653, 1370146.8139, 258246.0338)] // SW Pennsylvania, PA South (ftUS)
+    [InlineData(32129, 40.0223719, -79.8866653, 417621.5841, 78713.5485)]  // SW Pennsylvania, PA South (m)
+    [InlineData(2271, 41.79, -77.86, 1938502.4132, 591488.6526)]          // N Pennsylvania, PA North (ftUS)
     [InlineData(3857, 40.689247, -74.044502, -8242596.2587, 4966613.1574)] // New York, Web Mercator
     public void Matches_proj(int epsg, double lat, double lon, double easting, double northing)
     {
@@ -50,6 +53,7 @@ public class ProjectedCrsTests
 
     [Theory]
     [InlineData("")]
+    [InlineData("2263")]      // New York State Plane, not supported
     [InlineData("27700")]     // British National Grid needs a datum shift, not supported
     [InlineData("LL84")]
     public void Rejects_unsupported(string text) => Assert.False(ProjectedCrs.TryParse(text, out _));
@@ -67,5 +71,25 @@ public class ProjectedCrsTests
         var codes = ProjectedCrs.CandidatesNear(25.149, 55.203).Select(c => c.Epsg).ToList();
         Assert.Contains(3997, codes);
         Assert.Equal(32640, codes[0]);
+    }
+
+    [Fact]
+    public void Pennsylvania_candidates_include_state_plane()
+    {
+        var codes = ProjectedCrs.CandidatesNear(40.0223719, -79.8866653).Select(c => c.Epsg).ToList();
+        Assert.Contains(2272, codes);
+        Assert.Contains(32617, codes); // UTM 17N
+    }
+
+    [Fact]
+    public void Us_survey_feet_typed_into_revit_as_feet_place_correctly()
+    {
+        // The Revit foot value equals the survey's ftUS number; the exporter hands placements metres.
+        Assert.True(ProjectedCrs.TryCreate(2272, out var crs));
+        var placement = new ProjectedPlacement(crs);
+        var (lon, lat) = placement.ToLonLat(1370146.8139 * 0.3048, 258246.0338 * 0.3048);
+
+        Assert.Equal(40.0223719, lat, 7);
+        Assert.Equal(-79.8866653, lon, 7);
     }
 }

@@ -31,7 +31,17 @@ namespace RevitGeoExport.Core
         public double ElevationMeters { get; }
         public string Description => $"Model coordinates in {Crs}";
 
-        public (double Longitude, double Latitude) ToLonLat(double x, double y) => Crs.ToLonLat(x, y);
+        /// <param name="x">Easting from Revit, in metres (Revit feet × 0.3048).</param>
+        public (double Longitude, double Latitude) ToLonLat(double x, double y)
+        {
+            // Surveys in US survey feet are typed into Revit as plain feet, so the Revit foot value
+            // is the survey number itself.
+            if (Crs.IsUsSurveyFeet)
+                return Crs.ToLonLat(x / RevitFootMeters, y / RevitFootMeters);
+            return Crs.ToLonLat(x, y);
+        }
+
+        private const double RevitFootMeters = 0.3048;
     }
 
     internal static class PlacementExtensions
