@@ -27,6 +27,8 @@ namespace RevitGeoExport
         /// <summary>Only walls, roofs, floors, windows and other categories seen from outside.</summary>
         public bool ExteriorOnly { get; set; } = true;
 
+        public EarthWebDetail EarthWebDetail { get; set; } = EarthWebDetail.Balanced;
+
         /// <summary>Output path without extension; each format adds its own.</summary>
         public string OutputBasePath { get; set; }
     }
@@ -39,6 +41,7 @@ namespace RevitGeoExport
         private readonly TextBox _coordinates = new TextBox { Width = 260 };
         private readonly ComboBox _anchor = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 260 };
         private readonly NumericUpDown _rotation = Number(-360, 360, 2);
+        private readonly ComboBox _detail = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 260 };
         private readonly ComboBox _content = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 260 };
         private readonly ComboBox _altitude = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 260 };
         private readonly NumericUpDown _elevation = Number(-500, 9000, 2);
@@ -69,6 +72,8 @@ namespace RevitGeoExport
             _anchor.SelectedIndex = 0;
             _content.Items.AddRange(new object[] { "Exterior shell (best for Google Earth)", "Everything visible" });
             _content.SelectedIndex = 0;
+            _detail.Items.AddRange(new object[] { "Light (fastest)", "Balanced", "Full detail (slower)" });
+            _detail.SelectedIndex = 1;
             _altitude.Items.AddRange(new object[] { "Sit on the terrain", "Above sea level" });
             _altitude.SelectedIndex = 0;
             // Shared coordinates in a survey system usually carry real elevations already.
@@ -89,6 +94,7 @@ namespace RevitGeoExport
             AddRow(grid, "Height of Z = 0 above sea (m)", _elevation);
             AddRow(grid, "Vertical offset (m)", _offset);
             AddRow(grid, "Include", _content);
+            AddRow(grid, "Google Earth Web detail", _detail);
             AddRow(grid, "Export", Stack(_glb, _kmz, _geoJson, _webMap));
             AddRow(grid, "Save to (no extension)", Stack(_output, browse));
             AddRow(grid, "", _save);
@@ -165,6 +171,7 @@ namespace RevitGeoExport
                 WriteWebMap = _webMap.Checked,
                 SaveLocationToProject = _save.Checked,
                 ExteriorOnly = _content.SelectedIndex == 0,
+                EarthWebDetail = (EarthWebDetail)_detail.SelectedIndex,
                 OutputBasePath = StripExtension(_output.Text.Trim()),
             };
         }

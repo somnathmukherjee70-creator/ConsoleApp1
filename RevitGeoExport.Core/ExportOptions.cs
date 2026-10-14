@@ -21,6 +21,14 @@ namespace RevitGeoExport.Core
         Massing,
     }
 
+    /// <summary>How much of the model goes into the Google Earth Web KMZ: less detail draws faster.</summary>
+    public enum EarthWebDetail
+    {
+        Light,
+        Balanced,
+        Full,
+    }
+
     public sealed class ExportOptions
     {
         public string DocumentName { get; set; } = "Revit model";
@@ -38,15 +46,22 @@ namespace RevitGeoExport.Core
         /// <summary>One KML placemark per category instead of per element (Google Earth Web allows 10,000 features per import).</summary>
         public bool OneFeaturePerCategory { get; set; }
 
-        /// <summary>Google Earth Web's import limits: 250,000 vertices and 10,000 features, with a margin.</summary>
-        public static ExportOptions ForGoogleEarthWeb(ExportOptions options) => new ExportOptions
+        /// <summary>Flat faces smaller than this (m²) are left out of KML.</summary>
+        public double MinKmlFaceArea { get; set; }
+
+        /// <summary>
+        /// Options for the Google Earth Web KMZ: within its import limits (250,000 vertices, 10,000 features)
+        /// and lighter still for smooth navigation, at the chosen detail.
+        /// </summary>
+        public static ExportOptions ForGoogleEarthWeb(ExportOptions options, EarthWebDetail detail = EarthWebDetail.Balanced) => new ExportOptions
         {
+            MaxKmlPoints = detail == EarthWebDetail.Light ? 60_000 : detail == EarthWebDetail.Balanced ? 120_000 : 240_000,
+            MinKmlFaceArea = detail == EarthWebDetail.Light ? 0.5 : detail == EarthWebDetail.Balanced ? 0.1 : 0,
             DocumentName = options.DocumentName,
             AltitudeMode = options.AltitudeMode,
             GroundOffsetMeters = options.GroundOffsetMeters,
             KmlMode = KmlMode.Detailed3D,
             OneFeaturePerCategory = true,
-            MaxKmlPoints = 240_000,
             MaxModelTriangles = options.MaxModelTriangles,
         };
 

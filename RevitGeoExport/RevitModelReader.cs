@@ -264,7 +264,7 @@ namespace RevitGeoExport
                 var category = element.Category;
                 if (category == null || category.CategoryType != CategoryType.Model || Excluded.Contains(category.BuiltInCategory))
                     continue;
-                if (exteriorOnly && !ExteriorShell.Contains(category.BuiltInCategory))
+                if (exteriorOnly && (!ExteriorShell.Contains(category.BuiltInCategory) || IsHiddenFromOutside(element)))
                     continue;
 
                 var geometry = element.get_Geometry(options);
@@ -301,6 +301,27 @@ namespace RevitGeoExport
                         AddGeometry(instance.GetInstanceGeometry(), target, toLocal);
                         break;
                 }
+            }
+        }
+
+        /// <summary>
+        /// Interior, core-shaft and foundation walls, and the doors, windows and panels hosted in them, can't be
+        /// seen from outside but are often half a building's geometry. Revit's wall type function tells them apart.
+        /// </summary>
+        private static bool IsHiddenFromOutside(Element element)
+        {
+            var wall = element as Wall ?? (element as FamilyInstance)?.Host as Wall;
+            if (wall == null || wall.WallType == null || wall.WallType.Kind == WallKind.Curtain)
+                return false;
+
+            switch (wall.WallType.Function)
+            {
+                case WallFunction.Interior:
+                case WallFunction.Coreshaft:
+                case WallFunction.Foundation:
+                    return true;
+                default:
+                    return false;
             }
         }
 

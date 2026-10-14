@@ -87,7 +87,7 @@ namespace RevitGeoExport
                     // Earth Web ignores 3D models inside KMZ, but places 3D polygons itself: the architecture as
                     // faces, kept within its import limits.
                     written.Add(Write(settings.OutputBasePath + WebKmzSuffix,
-                        p => webKml = KmlWriter.WriteKmz(p, placement, meshes, ExportOptions.ForGoogleEarthWeb(options))));
+                        p => webKml = KmlWriter.WriteKmz(p, placement, meshes, ExportOptions.ForGoogleEarthWeb(options, settings.EarthWebDetail))));
 
                     // The real 3D model (COLLADA) with its location: Google Earth Pro opens it in place.
                     written.Add(Write(settings.OutputBasePath + ProKmzSuffix,

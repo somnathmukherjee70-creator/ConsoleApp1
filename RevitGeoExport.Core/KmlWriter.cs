@@ -60,14 +60,14 @@ namespace RevitGeoExport.Core
                     if (options.OneFeaturePerCategory)
                     {
                         // Google Earth Web counts features per import (max 10,000), so merge each category.
-                        var polygons = group.SelectMany(m => Polygons(m, placement, altitude, options.KmlMode)).ToList();
+                        var polygons = group.SelectMany(m => Polygons(m, placement, altitude, options.KmlMode, options.MinKmlFaceArea)).ToList();
                         WritePlacemark(xml, group.Key, $"{group.Count()} elements", group.Key, polygons, altitudeMode, options.KmlMode);
                     }
                     else
                     {
                         foreach (var mesh in group)
                             WritePlacemark(xml, mesh.Name, $"{mesh.Category} · Element ID {mesh.ElementId}", mesh.Category,
-                                Polygons(mesh, placement, altitude, options.KmlMode), altitudeMode, options.KmlMode);
+                                Polygons(mesh, placement, altitude, options.KmlMode, options.MinKmlFaceArea), altitudeMode, options.KmlMode);
                     }
 
                     xml.WriteEndElement();
@@ -161,10 +161,11 @@ namespace RevitGeoExport.Core
 
         // Every polygon is built and validated before writing: Google Earth Web rejects the whole file
         // after 100 invalid ones, and an empty MultiGeometry is invalid too.
-        private static List<(string Outer, List<string> Holes)> Polygons(GeoMesh mesh, IGeoPlacement placement, AltitudeResolver altitude, KmlMode mode) =>
+        private static List<(string Outer, List<string> Holes)> Polygons(GeoMesh mesh, IGeoPlacement placement, AltitudeResolver altitude,
+            KmlMode mode, double minFaceArea) =>
             mesh.IsEmpty ? new List<(string, List<string>)>()
             : mode == KmlMode.Massing ? MassingPolygon(mesh, placement, altitude)
-            : DetailedPolygons(mesh, placement, altitude);
+            : DetailedPolygons(mesh, placement, altitude, minFaceArea);
 
         private static void WritePlacemark(XmlWriter xml, string name, string description, string category,
             List<(string Outer, List<string> Holes)> polygons, string altitudeMode, KmlMode mode)
@@ -196,7 +197,10 @@ namespace RevitGeoExport.Core
             xml.WriteEndElement(); // Placemark
         }
 
-        private static List<(string Outer, List<string> Holes)> DetailedPolygons(GeoMesh mesh, IGeoPlacement placement, AltitudeResolver altitude)
+        /// <param name="minFaceArea">Flat faces smaller than this (m²) are left out: invisible at map scale, but costly to draw.
+        /// Triangles (curved surfaces) are always kept, or round shapes would get holes.</param>
+        private static List<(string Outer, List<string> Holes)> DetailedPolygons(GeoMesh mesh, IGeoPlacement placement, AltitudeResolver altitude,
+            double minFaceArea)
         {
             var result = new List<(string, List<string>)>();
             var triangle = new List<Vec3>(3);
@@ -212,6 +216,8 @@ namespace RevitGeoExport.Core
 
             foreach (var polygon in mesh.Polygons)
             {
+                if (Area(polygon.Outer) < minFaceArea)
+                    continue;
                 var outer = Ring(polygon.Outer, placement, altitude);
                 if (outer == null)
                     continue;

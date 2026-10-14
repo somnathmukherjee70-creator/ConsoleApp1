@@ -354,4 +354,26 @@ public class GoogleEarthWebKmlTests
         Assert.Equal(1 + 3, features); // location pin + one per category
         Assert.True(result.Omitted > 0);
     }
+
+    [Fact]
+    public void Lighter_detail_writes_fewer_points_and_skips_tiny_faces()
+    {
+        var placement = new GeoConverter(new GeoAnchor(40.0223719, -79.8866653));
+        var wall = new GeoMesh("1", "Wall", "Walls");
+        wall.AddPolygon(new GeoPolygon(new List<Vec3> { new(0, 0, 0), new(10, 0, 0), new(10, 0, 3), new(0, 0, 3) }));      // 30 m² face
+        wall.AddPolygon(new GeoPolygon(new List<Vec3> { new(0, 0, 0), new(0, 0.1, 0), new(0, 0.1, 3), new(0, 0, 3) }));    // 0.3 m² end cap
+        wall.AddPolygon(new GeoPolygon(new List<Vec3> { new(0, 0, 3), new(0.2, 0, 3), new(0.2, 0.2, 3), new(0, 0.2, 3) })); // 0.04 m² sliver
+
+        int Polygons(EarthWebDetail detail)
+        {
+            using var stream = new MemoryStream();
+            KmlWriter.WriteKml(stream, placement, new[] { wall }, ExportOptions.ForGoogleEarthWeb(new ExportOptions(), detail));
+            XNamespace kml = "http://www.opengis.net/kml/2.2";
+            return XDocument.Parse(Encoding.UTF8.GetString(stream.ToArray())).Descendants(kml + "Polygon").Count();
+        }
+
+        Assert.Equal(3, Polygons(EarthWebDetail.Full));
+        Assert.Equal(2, Polygons(EarthWebDetail.Balanced));
+        Assert.Equal(1, Polygons(EarthWebDetail.Light));
+    }
 }
