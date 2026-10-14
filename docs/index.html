@@ -5,6 +5,7 @@
 <title>Sightline · Free online IFC viewer for BIM models</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="Open, check and clash-test IFC models in your browser for free. Get a model health score, explore the model tree and properties, cut sections in any direction, merge architecture, structure and MEP files, measure, and export PDF and Excel reports. Your files never leave your computer.">
+<meta name="author" content="Somnath Mukherjee">
 <meta name="keywords" content="IFC viewer, IFC clash detection, online clash detection, BCF export, IFC checker, IFC validation, model checker, online IFC viewer, BIM viewer, free BIM viewer, IFC to Excel, IFC quantity takeoff, section box, IFC4, IFC2X3">
 <link rel="canonical" href="https://somnathmukherjee70-creator.github.io/Sightline/">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
@@ -23,7 +24,8 @@
   "applicationCategory": "DesignApplication",
   "operatingSystem": "Any (web browser)",
   "description": "Free browser-based viewer for IFC building models with sectioning, model merging, measuring and report export.",
-  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "author": { "@type": "Person", "name": "Somnath Mukherjee", "url": "https://github.com/somnathmukherjee70-creator" }
 }
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -135,6 +137,12 @@ h2 { font: 700 clamp(30px, 4vw, 44px)/1.05 var(--font-display); text-transform: 
 
 .final { text-align: left; display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; }
 .final h2 { margin: 0; }
+.creator { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 28px; align-items: start; }
+.creator h2 { margin-bottom: 14px; }
+.creator p:not(.eyebrow) { color: var(--ink-2); max-width: 62ch; margin: 0 0 12px; }
+.monogram { width: 92px; height: 92px; border: 1.5px solid var(--ink); display: grid; place-items: center; font: 700 38px/1 var(--font-display); letter-spacing: .04em; color: var(--accent); background: var(--panel); }
+@media (max-width: 560px) { .creator { grid-template-columns: minmax(0, 1fr); gap: 16px; } .monogram { width: 64px; height: 64px; font-size: 26px; } }
+footer a { color: inherit; font-weight: 600; }
 footer { border-top: 1px solid var(--line); padding-block: 22px 32px; color: var(--ink-2); font-size: 14px; display: flex; gap: 16px; flex-wrap: wrap; justify-content: space-between; }
 
 @media (max-width: 860px) {
@@ -236,13 +244,23 @@ footer { border-top: 1px solid var(--line); padding-block: 22px 32px; color: var
     </div>
   </section>
 
+  <section id="creator" class="creator" aria-labelledby="c-title">
+    <div class="monogram" aria-hidden="true">SM</div>
+    <div>
+      <p class="eyebrow">About the creator</p>
+      <h2 id="c-title">Made by Somnath Mukherjee</h2>
+      <p>Sightline is designed and built by Somnath Mukherjee to make reviewing BIM models simple for everyone: open an IFC file in the browser, check it, find clashes and share a report, with nothing to install and nothing uploaded.</p>
+      <p>Have feedback or an idea for a feature? Get in touch on <a href="https://github.com/somnathmukherjee70-creator" rel="author">GitHub</a>.</p>
+    </div>
+  </section>
+
   <section class="final" aria-label="Get started">
     <h2>Ready to open your model?</h2>
     <a class="btn primary" href="viewer/">Open the viewer</a>
   </section>
 
   <footer>
-    <span>Sightline IFC Viewer</span>
+    <span>Sightline IFC Viewer · Designed and built by <a href="#creator">Somnath Mukherjee</a></span>
     <span>Built with three.js and web-ifc · Files are processed in your browser</span>
   </footer>
 </div>
