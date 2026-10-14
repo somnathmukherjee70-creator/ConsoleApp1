@@ -54,6 +54,10 @@ Libraries are loaded from cdn.jsdelivr.net, so the browser needs internet access
   - Drag the arrows in 3D, or use each cut's slider; rotate a plane to any angle with Turn and Tilt;
     flip it to cut the other side; stack as many cuts as you like
   - Cut faces are filled solid, like poché on a drawing
+- **Model check**: one click scores the model out of 100 and lists 14 kinds of common IFC problems
+  (duplicate or missing GlobalIds, duplicate elements, misaligned files, proxies, missing storeys,
+  properties, materials, names and sizes, tiny geometry, empty storeys). Click an issue to zoom to it,
+  show a whole group in the model, or export the list as CSV
 - **Export reports**: a printable model report (save as PDF) with a 3D view, element counts per storey,
   quantity totals and a room schedule; CSV files (open in Excel) of every element with all its
   properties, quantities by IFC class, and rooms

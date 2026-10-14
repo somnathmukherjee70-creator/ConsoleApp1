@@ -23,6 +23,9 @@
   --accent-soft: #dfe6f8;
   --select: #d98e1f;     /* selection amber */
   --danger: #b2402f;
+  --ok: #2f8a4e;
+  --warn: #b7791f;
+  --bad: #b2402f;
   --grid-a: #b9c1b6;
   --grid-b: #d2d8cf;
   --font-display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
@@ -33,13 +36,13 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --ground: #131816; --panel: #1b211e; --panel-2: #232a26; --ink: #e2e7e1; --ink-2: #97a39b;
-    --line: #333d37; --accent: #86a2f4; --accent-soft: #24304f; --select: #f0ad45; --danger: #e8735f;
+    --line: #333d37; --accent: #86a2f4; --accent-soft: #24304f; --select: #f0ad45; --danger: #e8735f; --ok: #5cc183; --warn: #e6a94a; --bad: #ee7c69;
     --grid-a: #2f3833; --grid-b: #222925; color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --ground: #131816; --panel: #1b211e; --panel-2: #232a26; --ink: #e2e7e1; --ink-2: #97a39b;
-  --line: #333d37; --accent: #86a2f4; --accent-soft: #24304f; --select: #f0ad45; --danger: #e8735f;
+  --line: #333d37; --accent: #86a2f4; --accent-soft: #24304f; --select: #f0ad45; --danger: #e8735f; --ok: #5cc183; --warn: #e6a94a; --bad: #ee7c69;
   --grid-a: #2f3833; --grid-b: #222925; color-scheme: dark;
 }
 
@@ -191,6 +194,31 @@ table.sched tr.click:hover td { background: var(--panel-2); }
 .tally dd { margin: 0; font-family: var(--font-mono); text-align: right; font-variant-numeric: tabular-nums; }
 .tally dt { font-family: var(--font-mono); font-size: 12px; }
 
+/* model check */
+.hc-score { display: flex; gap: 14px; align-items: center; margin-bottom: 12px; }
+.hc-ring { --p: 0; --c: var(--ok); width: 74px; height: 74px; border-radius: 50%; flex: none; display: grid; place-items: center; background: conic-gradient(var(--c) calc(var(--p) * 1%), var(--line) 0); }
+.hc-ring span { width: 60px; height: 60px; border-radius: 50%; background: var(--panel); display: grid; place-items: center; font: 600 26px var(--font-display); font-variant-numeric: tabular-nums; }
+.hc-sum { display: grid; gap: 2px; min-width: 0; }
+.hc-word { font: 600 20px var(--font-display); text-transform: uppercase; letter-spacing: .06em; }
+.hc { border-top: 1px solid var(--line); padding-block: 8px; }
+.hc > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+.hc > summary::-webkit-details-marker { display: none; }
+.hc-title { font-weight: 600; min-width: 0; }
+.sev { font: 600 11px var(--font-display); letter-spacing: .08em; text-transform: uppercase; padding: 2px 7px; border-radius: 3px; flex: none; color: var(--panel); }
+.sev-error { background: var(--bad); }
+.sev-warning { background: var(--warn); }
+.sev-info { background: var(--ink-2); }
+.sev-ok { background: var(--ok); }
+.hc-why { color: var(--ink-2); margin: 6px 0 8px; line-height: 1.45; }
+.hc-list { display: grid; margin-top: 6px; max-height: 260px; overflow: auto; }
+.hc-item { display: flex; gap: 8px; align-items: baseline; text-align: left; border: 0; background: none; padding: 4px 6px; border-radius: 4px; cursor: pointer; min-width: 0; }
+.hc-item:hover { background: var(--panel-2); }
+.hc-item.static { cursor: default; }
+.hc-item .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hc-meta { font-family: var(--font-mono); font-size: 11px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 55%; }
+.hc-passed { margin: 6px 0 0; padding-left: 18px; color: var(--ink-2); }
+.hc-back { margin-bottom: 8px; }
+
 /* status bar */
 .status { display: flex; gap: 16px; padding-block: 7px; font-size: 12px; color: var(--ink-2); min-width: 0; }
 .status span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -235,6 +263,9 @@ table.sched tr.click:hover td { background: var(--panel-2); }
     <button class="btn primary" id="btnAppend" title="Add .ifc files to the current model (or drop them on the viewport)">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 3v10M3 8h10"/></svg><span class="label-txt">Add IFC</span>
     </button>
+    <button class="btn" id="btnCheck" title="Check the model for common IFC problems">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 1.5 2.5 4v4c0 3.2 2.4 5.6 5.5 6.5 3.1-.9 5.5-3.3 5.5-6.5V4z"/><path d="m5.5 8 1.8 1.8L10.8 6"/></svg><span class="label-txt">Check model</span>
+    </button>
     <details class="menu" id="exportMenu">
       <summary class="btn"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4 2h6l3 3v9H4zM10 2v3h3M6.5 9.5h4M6.5 12h4"/></svg><span class="label-txt">Export report</span></summary>
       <div class="menu-list" role="menu">
@@ -242,6 +273,7 @@ table.sched tr.click:hover td { background: var(--panel-2); }
         <button role="menuitem" data-export="elements"><b>Element list</b><span>Every element with all its properties (CSV for Excel)</span></button>
         <button role="menuitem" data-export="quantities"><b>Quantities</b><span>Count, length, area and volume by IFC class (CSV)</span></button>
         <button role="menuitem" data-export="rooms"><b>Room schedule</b><span>Rooms with area and type (CSV)</span></button>
+        <button role="menuitem" data-export="check"><b>Model check</b><span>Every problem the model check found (CSV)</span></button>
       </div>
     </details>
     <input type="file" id="fileInput" accept=".ifc" multiple hidden>
@@ -884,6 +916,7 @@ function finishLoad() {
 }
 // Rebuild everything that depends on which files and elements are loaded.
 function refreshModel(fit) {
+  state.check = null;
   const files = liveFiles();
   const title = files.length > 1 ? `${files[0].name} + ${files.length - 1} more` : files[0].name;
   $('#modelName').textContent = title;
@@ -1621,6 +1654,7 @@ function renderProps() {
   const box = $('#props');
   const el = state.selected;
   if (!M) { box.innerHTML = ''; return; }
+  if (!el && state.check && state.showCheck) return renderCheck(box);
   if (!el) {
     $('#propsTitle').textContent = 'Model summary';
     let rooms = '';
@@ -1639,7 +1673,8 @@ function renderProps() {
   }
   $('#propsTitle').textContent = 'Properties';
   const s = M.storeys[el.storey];
-  const head = `<div class="prop-head"><span class="cls-badge">${esc(el.ifcClass)}</span><h2>${esc(el.name)}</h2></div>
+  const back = state.check && state.showCheck ? '<button class="btn small hc-back" id="hcBack">← Back to model check</button>' : '';
+  const head = back + `<div class="prop-head"><span class="cls-badge">${esc(el.ifcClass)}</span><h2>${esc(el.name)}</h2></div>
     <div class="guid"><span>GlobalId ${esc(el.guid || '—')}</span>${el.guid ? '<button class="btn small" id="copyGuid">Copy</button>' : ''}</div>
     <div class="actions">
       <button class="btn small" id="actZoom">Zoom to</button>
@@ -1651,6 +1686,7 @@ function renderProps() {
   const ident = { ...(liveFiles().length > 1 ? { Model: M.files[el.file].name } : {}), Storey: s.name, ...(Number.isFinite(s.elevation) ? { Elevation: mm(s.elevation) } : {}), ...(el.material ? { Material: el.material } : {}), ...(el.expressID ? { ExpressID: '#' + el.expressID } : {}) };
   box.innerHTML = head + psetHtml('Identity', ident) + Object.entries(el.psets || {}).map(([k, v]) => psetHtml(k, v)).join('') + (M.files[el.file].ifcId != null ? '<p class="muted" id="psetLoading" style="padding-top:8px">Reading property sets…</p>' : '');
   $('#actZoom').onclick = () => zoomTo(el);
+  if ($('#hcBack')) $('#hcBack').onclick = () => select(null);
   $('#actHide').onclick = () => { el.hidden = true; applyVisibility(); };
   $('#actIsolate').onclick = () => { state.isolated = new Set([el]); applyVisibility(); zoomTo(el); };
   $('#actBox').onclick = () => sectionBoxAround(el);
@@ -1685,7 +1721,7 @@ async function readProps(el) {
   const out = {};
   const line = api.GetLine(id, el.expressID, false);
   const attrs = {};
-  for (const k of ['Name', 'LongName', 'Description', 'ObjectType', 'Tag', 'PredefinedType']) if (line[k]?.value != null) attrs[k] = ifcValue(line[k]);
+  for (const k of ['Name', 'LongName', 'Description', 'ObjectType', 'Tag', 'PredefinedType', 'OverallWidth', 'OverallHeight']) if (line[k]?.value != null) attrs[k] = ifcValue(line[k]);
   out.Attributes = attrs;
   const mats = await api.properties.getMaterialsProperties(id, el.expressID, false, true);
   const matNames = mats.map((m) => m.Name?.value || m.LayerSetName?.value).filter(Boolean);
@@ -1893,7 +1929,7 @@ $('#exportMenu').addEventListener('click', async (e) => {
   $('#exportMenu').open = false;
   if (!M) return;
   try {
-    ({ elements: exportElementsCsv, quantities: exportQuantitiesCsv, rooms: exportRoomsCsv, pdf: openPrintReport })[b.dataset.export]();
+    ({ elements: exportElementsCsv, quantities: exportQuantitiesCsv, rooms: exportRoomsCsv, pdf: openPrintReport, check: exportCheckCsv })[b.dataset.export]();
   } catch (err) {
     console.error(err);
     hideBusy();
@@ -1901,6 +1937,217 @@ $('#exportMenu').addEventListener('click', async (e) => {
   }
 });
 document.addEventListener('click', (e) => { if (!e.target.closest('#exportMenu')) $('#exportMenu').open = false; });
+
+/* ---------- model check ---------- */
+// Each check returns the elements it flags, with an optional note. Scores drop more for errors
+// than for advice, and more when a larger share of the model is affected.
+const SEV = { error: { label: 'Error', w: 12 }, warning: { label: 'Warning', w: 5 }, info: { label: 'Advice', w: 1 } };
+const NON_PHYSICAL = new Set(['IfcSpace', 'IfcOpeningElement', 'IfcAnnotation', 'IfcGrid', 'IfcVirtualElement']);
+const hasPsets = (props) => Object.entries(props).some(([k, v]) => !['Attributes', 'Material', 'Identity'].includes(k) && Object.keys(v).length);
+function findProp(props, key) {
+  for (const set of Object.values(props)) {
+    const v = set[key];
+    if (v != null && v !== '' && v !== '—') return v;
+  }
+  return null;
+}
+const CHECKS = [
+  {
+    id: 'guid-dup', sev: 'error', title: 'Duplicate GlobalIds',
+    why: 'Every element needs its own GlobalId. Duplicates break issue tracking (BCF), clash results and model updates.',
+    run({ rows }) {
+      const by = new Map();
+      for (const r of rows) if (r.el.guid) {
+        const k = r.file.index + '|' + r.el.guid;
+        if (!by.has(k)) by.set(k, []);
+        by.get(k).push(r.el);
+      }
+      return [...by.values()].filter((l) => l.length > 1).flatMap((l) => l.map((el) => ({ el, note: `Shared by ${l.length} elements` })));
+    },
+  },
+  {
+    id: 'guid-missing', sev: 'error', title: 'Missing GlobalIds',
+    why: 'Without a GlobalId an element cannot be tracked between model versions or referenced in issues.',
+    run: ({ rows }) => rows.filter((r) => !r.el.guid).map((r) => ({ el: r.el })),
+  },
+  {
+    id: 'overlap', sev: 'error', title: 'Duplicate elements in the same place',
+    why: 'Two elements of the same type with the same size and position are usually accidental copies. They double quantities and costs.',
+    run({ rows, boxes }) {
+      const by = new Map();
+      for (const r of rows) {
+        if (NON_PHYSICAL.has(r.el.ifcClass)) continue;
+        const b = boxes.get(r.el);
+        if (b.isEmpty()) continue;
+        const k = [r.file.index, r.el.ifcClass, ...b.min.toArray(), ...b.max.toArray()].map((v) => (typeof v === 'number' ? Math.round(v * 100) : v)).join('|');
+        if (!by.has(k)) by.set(k, []);
+        by.get(k).push(r.el);
+      }
+      return [...by.values()].filter((l) => l.length > 1).flatMap((l) => l.slice(1).map((el) => ({ el, note: `Same place as ${l[0].name}` })));
+    },
+  },
+  {
+    id: 'far', sev: 'error', title: 'Files that do not line up',
+    why: 'Merged files should share the same project origin. A file far from the others was probably exported with different coordinates.',
+    run({ rows, boxes }) {
+      const files = liveFiles();
+      if (files.length < 2) return [];
+      const fileBox = (f) => rows.filter((r) => r.file === f).reduce((b, r) => b.union(boxes.get(r.el)), new THREE.Box3());
+      const ref = fileBox(files[0]), refC = ref.getCenter(new THREE.Vector3());
+      const out = [];
+      for (const f of files.slice(1)) {
+        const b = fileBox(f);
+        if (b.isEmpty() || b.intersectsBox(ref)) continue;
+        const d = b.getCenter(new THREE.Vector3()).distanceTo(refC);
+        const first = rows.find((r) => r.file === f);
+        out.push({ el: first.el, note: `${f.name} is ${Math.round(d).toLocaleString()} m away from ${files[0].name}` });
+      }
+      return out;
+    },
+  },
+  {
+    id: 'no-storey', sev: 'warning', title: 'Elements not on a storey',
+    why: 'Elements should be placed on an IfcBuildingStorey, or they drop out of level-based views and schedules.',
+    run: ({ rows }) => rows.filter((r) => r.storey.name === 'Unassigned').map((r) => ({ el: r.el })),
+  },
+  {
+    id: 'proxy', sev: 'warning', title: 'Unclassified objects (proxies)',
+    why: 'IfcBuildingElementProxy has no real type, so these objects fall out of quantities and checks. Export them as walls, slabs, beams and so on.',
+    run: ({ rows }) => rows.filter((r) => r.el.ifcClass === 'IfcBuildingElementProxy').map((r) => ({ el: r.el })),
+  },
+  {
+    id: 'no-pset', sev: 'warning', title: 'Elements without properties',
+    why: 'These elements have no property sets, so they carry no information beyond their shape.',
+    run: ({ rows }) => rows.filter((r) => !hasPsets(r.props)).map((r) => ({ el: r.el })),
+  },
+  {
+    id: 'door-size', sev: 'warning', title: 'Doors and windows without a size',
+    why: 'Width and height are needed for door and window schedules and for accessibility checks.',
+    run: ({ rows }) => rows.filter((r) => /^Ifc(Door|Window)/.test(r.el.ifcClass) && pickQty(r.props, ['OverallWidth', 'Width']) == null).map((r) => ({ el: r.el })),
+  },
+  {
+    id: 'space-area', sev: 'warning', title: 'Rooms without a floor area',
+    why: 'Rooms (IfcSpace) need a floor area quantity for room schedules and area reports.',
+    run: ({ rows }) => rows.filter((r) => r.el.ifcClass === 'IfcSpace' && r.el.area == null && pickQty(r.props, ['NetFloorArea', 'GrossFloorArea', 'NetArea', 'Area']) == null).map((r) => ({ el: r.el })),
+  },
+  {
+    id: 'tiny', sev: 'warning', title: 'Tiny or empty geometry',
+    why: 'Elements smaller than 5 mm in every direction are usually leftovers from modelling.',
+    run: ({ rows, boxes }) => rows.filter((r) => {
+      const b = boxes.get(r.el);
+      if (b.isEmpty()) return true;
+      const s = b.getSize(new THREE.Vector3());
+      return Math.max(s.x, s.y, s.z) < 0.005;
+    }).map((r) => ({ el: r.el })),
+  },
+  {
+    id: 'no-name', sev: 'warning', title: 'Elements without a name',
+    why: 'Unnamed elements are hard to find in schedules, issues and conversations.',
+    run: ({ rows }) => rows.filter((r) => !r.el.name || /^#\d+$/.test(r.el.name)).map((r) => ({ el: r.el })),
+  },
+  {
+    id: 'no-material', sev: 'info', title: 'Elements without a material',
+    why: 'A material is needed for cost, carbon and fire calculations.',
+    run: ({ rows }) => rows.filter((r) => !NON_PHYSICAL.has(r.el.ifcClass) && findProp(r.props, 'Material') == null).map((r) => ({ el: r.el })),
+  },
+  {
+    id: 'wall-flags', sev: 'info', title: 'Walls missing IsExternal or LoadBearing',
+    why: 'Pset_WallCommon IsExternal and LoadBearing drive energy, structural and fire checks.',
+    run: ({ rows }) => rows.filter((r) => /^IfcWall/.test(r.el.ifcClass) && (findProp(r.props, 'IsExternal') == null || findProp(r.props, 'LoadBearing') == null))
+      .map((r) => ({ el: r.el, note: findProp(r.props, 'IsExternal') == null ? 'No IsExternal' : 'No LoadBearing' })),
+  },
+  {
+    id: 'empty-storey', sev: 'info', title: 'Empty storeys',
+    why: 'Storeys with no elements usually come from unused levels in the authoring tool.',
+    run: ({ rows }) => M.storeys.filter((s) => !M.files[s.file].removed && !rows.some((r) => r.storey === s))
+      .map((s) => ({ el: null, label: `${s.name} (${M.files[s.file].name})` })),
+  },
+];
+
+async function runModelCheck() {
+  const rows = await collectReport();
+  const boxes = new Map(rows.map((r) => [r.el, new THREE.Box3().setFromObject(r.el.object)]));
+  const ctx = { rows, boxes };
+  const results = CHECKS.map((c) => ({ ...c, items: c.run(ctx) }));
+  const n = Math.max(1, rows.length);
+  let lost = 0;
+  for (const r of results) if (r.items.length) lost += SEV[r.sev].w * (1 + 2 * Math.min(1, r.items.length / (0.1 * n)));
+  const score = Math.max(0, Math.round(100 - lost));
+  state.check = { results, score, total: rows.length, files: liveFiles().length, at: new Date() };
+  state.showCheck = true;
+  if (state.selected) select(null); else renderProps();
+  if (matchMedia('(max-width: 860px)').matches) { closePanels(); $('#propsPanel').classList.add('open'); $('#btnProps').setAttribute('aria-pressed', true); }
+}
+const grade = (s) => (s >= 90 ? ['Good', 'ok'] : s >= 70 ? ['Fair', 'warn'] : ['Poor', 'bad']);
+
+function renderCheck(box) {
+  const c = state.check;
+  $('#propsTitle').textContent = 'Model check';
+  const failed = c.results.filter((r) => r.items.length).sort((a, b) => SEV[b.sev].w - SEV[a.sev].w || b.items.length - a.items.length);
+  const passed = c.results.filter((r) => !r.items.length);
+  const counts = ['error', 'warning', 'info'].map((s) => [s, failed.filter((r) => r.sev === s).length]).filter(([, k]) => k);
+  const [word, tone] = grade(c.score);
+  const LIMIT = 150;
+  box.innerHTML = `
+    <div class="hc-score">
+      <div class="hc-ring" style="--p:${c.score};--c:var(--${tone})" role="img" aria-label="Score ${c.score} out of 100"><span>${c.score}</span></div>
+      <div class="hc-sum"><b class="hc-word" style="color:var(--${tone})">${word}</b>
+        <span>${counts.length ? counts.map(([s, k]) => `${k} ${SEV[s].label.toLowerCase()}${k > 1 ? (s === 'info' ? '' : 's') : ''}`).join(' · ') : 'No problems found'}</span>
+        <span class="muted">${c.total.toLocaleString()} elements in ${c.files} file${c.files > 1 ? 's' : ''} · ${CHECKS.length} checks</span></div>
+    </div>
+    <div class="actions">
+      <button class="btn small" id="hcRerun">Check again</button>
+      <button class="btn small" id="hcCsv">Export CSV</button>
+      <button class="btn small" id="hcClose">Hide results</button>
+    </div>
+    ${failed.map((r) => `
+      <details class="hc" ${failed.length <= 3 ? 'open' : ''}>
+        <summary><span class="sev sev-${r.sev}">${SEV[r.sev].label}</span><span class="hc-title">${esc(r.title)}</span><span class="count">${r.items.length.toLocaleString()}</span></summary>
+        <p class="hc-why">${esc(r.why)}</p>
+        ${r.items.some((i) => i.el) ? `<button class="btn small" data-hc-show="${r.id}">Show these in the model</button>` : ''}
+        <div class="hc-list">${r.items.slice(0, LIMIT).map((i) => i.el
+          ? `<button class="hc-item" data-uid="${i.el.uid}"><span class="nm">${esc(i.el.name)}</span><span class="hc-meta">${esc(i.note || i.el.ifcClass)}</span></button>`
+          : `<div class="hc-item static"><span class="nm">${esc(i.label)}</span></div>`).join('')}
+          ${r.items.length > LIMIT ? `<p class="muted">…and ${(r.items.length - LIMIT).toLocaleString()} more in the CSV export.</p>` : ''}</div>
+      </details>`).join('')}
+    ${passed.length ? `<details class="hc passed"><summary><span class="sev sev-ok">Passed</span><span class="hc-title">${passed.length} checks with no problems</span></summary>
+      <ul class="hc-passed">${passed.map((r) => `<li>${esc(r.title)}</li>`).join('')}</ul></details>` : ''}`;
+  $('#hcRerun').onclick = runModelCheck;
+  $('#hcCsv').onclick = exportCheckCsv;
+  $('#hcClose').onclick = () => { state.showCheck = false; renderProps(); };
+  box.querySelectorAll('[data-hc-show]').forEach((b) => b.addEventListener('click', () => showCheckItems(c.results.find((r) => r.id === b.dataset.hcShow))));
+  box.querySelectorAll('.hc-item[data-uid]').forEach((b) => b.addEventListener('click', () => {
+    const el = M.byUid.get(+b.dataset.uid);
+    if (!el) return;
+    if (!isShown(el)) { el.hidden = false; state.hiddenClasses.delete(el.ifcClass); M.storeys[el.storey].hidden = false; M.files[el.file].hidden = false; if (state.isolated) state.isolated.add(el); renderChips(); applyVisibility(); }
+    select(el);
+    zoomTo(el);
+  }));
+}
+function showCheckItems(r) {
+  const els = r.items.map((i) => i.el).filter(Boolean);
+  for (const el of els) { el.hidden = false; state.hiddenClasses.delete(el.ifcClass); M.storeys[el.storey].hidden = false; M.files[el.file].hidden = false; }
+  state.isolated = new Set(els);
+  renderChips();
+  applyVisibility();
+  const b = els.reduce((acc, el) => acc.union(new THREE.Box3().setFromObject(el.object)), new THREE.Box3());
+  if (!b.isEmpty()) fitBox(b.expandByScalar(1));
+  toast(`Showing ${els.length.toLocaleString()} element${els.length > 1 ? 's' : ''}. Use Show all to bring back the rest.`);
+}
+async function exportCheckCsv() {
+  if (!state.check) await runModelCheck();
+  const c = state.check;
+  const body = [];
+  for (const r of c.results) for (const i of r.items) {
+    const el = i.el;
+    body.push([SEV[r.sev].label, r.title, el ? M.files[el.file].name : '', el ? M.storeys[el.storey].name : '', el ? el.ifcClass : '', el ? el.name : i.label, el ? el.guid : '', i.note || '']);
+  }
+  downloadCsv(`${reportBase()}-model-check.csv`, ['Severity', 'Check', 'Model', 'Storey', 'IFC class', 'Name', 'GlobalId', 'Note'], body);
+  toast(body.length ? `Exported ${body.length.toLocaleString()} issues. Score ${c.score}/100.` : 'No issues to export. The model passed every check.');
+}
+$('#btnCheck').addEventListener('click', async () => {
+  try { await runModelCheck(); } catch (err) { console.error(err); hideBusy(); toast(`The check failed: ${err.message || err}`, true); }
+});
 
 /* ---------- panels (narrow screens) ---------- */
 function closePanels() {
