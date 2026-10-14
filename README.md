@@ -17,7 +17,7 @@ docs/
 1. The repository must be public (or on a paid GitHub plan).
 2. On GitHub: **Settings → Pages → Build and deployment → Deploy from a branch**.
 3. Choose the branch with this code and the **`/docs`** folder, then **Save**.
-4. After a minute the site is live at https://somnathmukherjee70-creator.github.io/ConsoleApp1/
+4. After a minute the site is live at https://somnathmukherjee70-creator.github.io/Sightline/
 
 To make it show up in Google, add the site in [Google Search Console](https://search.google.com/search-console)
 and submit `sitemap.xml`. If you later use your own domain, update the addresses in
