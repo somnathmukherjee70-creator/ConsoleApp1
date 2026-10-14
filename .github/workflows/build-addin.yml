@@ -1,0 +1,36 @@
+name: Build Revit add-in
+
+on:
+  push:
+    branches: ["**"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Test
+        run: dotnet test RevitGeoExport.Core.Tests -c Release
+
+      - name: Build
+        run: dotnet build RevitGeoExport -c Release
+
+      - name: Package
+        shell: pwsh
+        run: |
+          $out = 'package'
+          New-Item -ItemType Directory -Force "$out/Revit2024", "$out/Revit2025" | Out-Null
+          Copy-Item RevitGeoExport/bin/Release/net48/*.dll "$out/Revit2024"
+          Copy-Item RevitGeoExport/bin/Release/net8.0-windows/*.dll "$out/Revit2025"
+          Copy-Item RevitGeoExport/RevitGeoExport.addin, install/install.ps1, install/install.bat $out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RevitGeoExport
+          path: package

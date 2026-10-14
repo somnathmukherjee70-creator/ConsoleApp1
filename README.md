@@ -58,10 +58,24 @@ If the active view is a 3D view, only what that view shows is exported (hidden
 categories, section box and phase filter all apply). Otherwise the whole model is exported.
 Topography/toposolids, rooms, cameras and linked models are skipped.
 
-## Build
+## Install
 
-Requires the .NET 8 SDK on Windows (the Revit API is pulled from NuGet, so Revit itself
-is not needed to build).
+Works with Revit 2024, 2025 and 2026 on Windows.
+
+1. Download the ready-built add-in: on GitHub open **Actions › Build Revit add-in**, click the
+   latest green run, and download **RevitGeoExport** under *Artifacts* (you must be signed in).
+2. Unzip it anywhere.
+3. Close Revit and double-click **`install.bat`**. It finds every Revit version on the computer
+   and copies the right build into `%AppData%\Autodesk\Revit\Addins\<version>\`.
+4. Start Revit and click **Always Load** when it asks about *Revit Geo Export*.
+5. The button is on the **Add-Ins** tab: **Geo Export › Place on Map**.
+
+To uninstall, run `install.bat -Uninstall` from a command prompt.
+
+<details>
+<summary>Manual install, or building it yourself</summary>
+
+Build with the .NET 8 SDK on Windows (Revit is not needed to build; its API comes from NuGet):
 
 ```
 dotnet build RevitGeoExport -c Release
@@ -72,13 +86,19 @@ dotnet build RevitGeoExport -c Release
 | `RevitGeoExport/bin/Release/net48/` | 2024 |
 | `RevitGeoExport/bin/Release/net8.0-windows/` | 2025, 2026 |
 
-## Install
+Then copy `RevitGeoExport.addin` to `%AppData%\Autodesk\Revit\Addins\<version>\`, and the
+`.dll` files from the matching output folder to `%AppData%\Autodesk\Revit\Addins\<version>\RevitGeoExport\`.
+If you copied files from a download, right-click each `.dll` › *Properties* › tick **Unblock**.
 
-1. Copy `RevitGeoExport.addin` to `%AppData%\Autodesk\Revit\Addins\<version>\`.
-2. Copy the contents of the matching output folder to
-   `%AppData%\Autodesk\Revit\Addins\<version>\RevitGeoExport\`.
-3. Start Revit and click **Add-Ins › Geo Export › Place on Map**. Approve the
-   add-in the first time Revit asks.
+</details>
+
+## Troubleshooting
+
+- **No Geo Export panel**: check that `RevitGeoExport.addin` is directly in the `Addins\<version>`
+  folder, and that the DLLs are in the `RevitGeoExport` sub-folder next to it.
+- **"Could not load file or assembly" when Revit starts**: the DLLs are blocked. Run `install.bat`
+  again, which unblocks them, or unblock them by hand as described above.
+- **Revit 2023 or older**: not supported.
 
 ## Tests
 
