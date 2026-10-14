@@ -25,7 +25,7 @@
   "operatingSystem": "Any (web browser)",
   "description": "Free browser-based viewer for IFC building models with sectioning, model merging, measuring and report export.",
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-  "author": { "@type": "Person", "name": "Somnath Mukherjee", "url": "https://github.com/somnathmukherjee70-creator" }
+  "author": { "@type": "Person", "name": "Somnath Mukherjee", "url": "https://github.com/somnathmukherjee70-creator", "image": "https://somnathmukherjee70-creator.github.io/Sightline/assets/somnath-mukherjee.jpg" }
 }
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -140,8 +140,8 @@ h2 { font: 700 clamp(30px, 4vw, 44px)/1.05 var(--font-display); text-transform: 
 .creator { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 28px; align-items: start; }
 .creator h2 { margin-bottom: 14px; }
 .creator p:not(.eyebrow) { color: var(--ink-2); max-width: 62ch; margin: 0 0 12px; }
-.monogram { width: 92px; height: 92px; border: 1.5px solid var(--ink); display: grid; place-items: center; font: 700 38px/1 var(--font-display); letter-spacing: .04em; color: var(--accent); background: var(--panel); }
-@media (max-width: 560px) { .creator { grid-template-columns: minmax(0, 1fr); gap: 16px; } .monogram { width: 64px; height: 64px; font-size: 26px; } }
+.portrait { width: 148px; height: 148px; max-width: 100%; object-fit: cover; display: block; border: 1.5px solid var(--ink); padding: 5px; background: var(--panel); }
+@media (max-width: 560px) { .creator { grid-template-columns: minmax(0, 1fr); gap: 16px; } .portrait { width: 112px; height: 112px; } }
 footer a { color: inherit; font-weight: 600; }
 footer { border-top: 1px solid var(--line); padding-block: 22px 32px; color: var(--ink-2); font-size: 14px; display: flex; gap: 16px; flex-wrap: wrap; justify-content: space-between; }
 
@@ -245,7 +245,7 @@ footer { border-top: 1px solid var(--line); padding-block: 22px 32px; color: var
   </section>
 
   <section id="creator" class="creator" aria-labelledby="c-title">
-    <div class="monogram" aria-hidden="true">SM</div>
+    <img class="portrait" src="assets/somnath-mukherjee.jpg" width="400" height="400" alt="Somnath Mukherjee" loading="lazy">
     <div>
       <p class="eyebrow">About the creator</p>
       <h2 id="c-title">Made by Somnath Mukherjee</h2>
