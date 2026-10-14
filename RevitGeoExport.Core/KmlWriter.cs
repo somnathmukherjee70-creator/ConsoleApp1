@@ -57,8 +57,19 @@ namespace RevitGeoExport.Core
                 {
                     xml.WriteStartElement("Folder");
                     xml.WriteElementString("name", group.Key);
-                    foreach (var mesh in group)
-                        WriteMeshPlacemark(xml, mesh, placement, altitude, altitudeMode, options.KmlMode);
+                    if (options.OneFeaturePerCategory)
+                    {
+                        // Google Earth Web counts features per import (max 10,000), so merge each category.
+                        var polygons = group.SelectMany(m => Polygons(m, placement, altitude, options.KmlMode)).ToList();
+                        WritePlacemark(xml, group.Key, $"{group.Count()} elements", group.Key, polygons, altitudeMode, options.KmlMode);
+                    }
+                    else
+                    {
+                        foreach (var mesh in group)
+                            WritePlacemark(xml, mesh.Name, $"{mesh.Category} · Element ID {mesh.ElementId}", mesh.Category,
+                                Polygons(mesh, placement, altitude, options.KmlMode), altitudeMode, options.KmlMode);
+                    }
+
                     xml.WriteEndElement();
                 }
 
@@ -148,24 +159,23 @@ namespace RevitGeoExport.Core
             xml.WriteEndElement();
         }
 
-        private static void WriteMeshPlacemark(XmlWriter xml, GeoMesh mesh, IGeoPlacement placement, AltitudeResolver altitude,
-            string altitudeMode, KmlMode mode)
-        {
-            if (mesh.IsEmpty)
-                return;
+        // Every polygon is built and validated before writing: Google Earth Web rejects the whole file
+        // after 100 invalid ones, and an empty MultiGeometry is invalid too.
+        private static List<(string Outer, List<string> Holes)> Polygons(GeoMesh mesh, IGeoPlacement placement, AltitudeResolver altitude, KmlMode mode) =>
+            mesh.IsEmpty ? new List<(string, List<string>)>()
+            : mode == KmlMode.Massing ? MassingPolygon(mesh, placement, altitude)
+            : DetailedPolygons(mesh, placement, altitude);
 
-            // Build and validate every polygon first: Google Earth Web rejects the whole file after 100
-            // invalid ones, and an empty MultiGeometry is invalid too.
-            var polygons = mode == KmlMode.Massing
-                ? MassingPolygon(mesh, placement, altitude)
-                : DetailedPolygons(mesh, placement, altitude);
+        private static void WritePlacemark(XmlWriter xml, string name, string description, string category,
+            List<(string Outer, List<string> Holes)> polygons, string altitudeMode, KmlMode mode)
+        {
             if (polygons.Count == 0)
                 return;
 
             xml.WriteStartElement("Placemark");
-            xml.WriteElementString("name", mesh.Name);
-            xml.WriteElementString("description", $"{mesh.Category} · Element ID {mesh.ElementId}");
-            xml.WriteElementString("styleUrl", "#" + StyleId(mesh.Category));
+            xml.WriteElementString("name", name);
+            xml.WriteElementString("description", description);
+            xml.WriteElementString("styleUrl", "#" + StyleId(category));
             if (polygons.Count > 1)
                 xml.WriteStartElement("MultiGeometry");
 

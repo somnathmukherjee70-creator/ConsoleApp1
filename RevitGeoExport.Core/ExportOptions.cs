@@ -35,6 +35,21 @@ namespace RevitGeoExport.Core
 
         public KmlMode KmlMode { get; set; } = KmlMode.Detailed3D;
 
+        /// <summary>One KML placemark per category instead of per element (Google Earth Web allows 10,000 features per import).</summary>
+        public bool OneFeaturePerCategory { get; set; }
+
+        /// <summary>Google Earth Web's import limits: 250,000 vertices and 10,000 features, with a margin.</summary>
+        public static ExportOptions ForGoogleEarthWeb(ExportOptions options) => new ExportOptions
+        {
+            DocumentName = options.DocumentName,
+            AltitudeMode = options.AltitudeMode,
+            GroundOffsetMeters = options.GroundOffsetMeters,
+            KmlMode = KmlMode.Detailed3D,
+            OneFeaturePerCategory = true,
+            MaxKmlPoints = 240_000,
+            MaxModelTriangles = options.MaxModelTriangles,
+        };
+
         /// <summary>Most triangles written to a GLB model; the smallest elements go first. 0 means no limit.</summary>
         public int MaxModelTriangles { get; set; } = 1_500_000;
     }

@@ -321,3 +321,37 @@ public class ColladaKmzWriterTests
         Assert.Equal("1", model.Descendants(dae + "double_sided").First().Value);
     }
 }
+
+public class GoogleEarthWebKmlTests
+{
+    [Fact]
+    public void Earth_web_kml_stays_within_its_import_limits()
+    {
+        var placement = new GeoConverter(new GeoAnchor(40.0223719, -79.8866653));
+        var rnd = new Random(3);
+        var meshes = new List<GeoMesh>();
+        foreach (var category in new[] { "Walls", "Windows", "Curtain Panels" })
+        {
+            for (int i = 0; i < 5000; i++)
+            {
+                var m = new GeoMesh($"{category}{i}", "Element", category);
+                double x = rnd.NextDouble() * 60, y = rnd.NextDouble() * 40, size = 0.2 + rnd.NextDouble() * 3;
+                for (int t = 0; t < 6; t++)
+                    m.AddTriangle(new Vec3(x, y, t), new Vec3(x + size, y, t), new Vec3(x, y + size * 0.5, t + size));
+                meshes.Add(m);
+            }
+        }
+
+        using var stream = new MemoryStream();
+        var result = KmlWriter.WriteKml(stream, placement, meshes, ExportOptions.ForGoogleEarthWeb(new ExportOptions()));
+        var doc = XDocument.Parse(Encoding.UTF8.GetString(stream.ToArray()));
+        XNamespace kml = "http://www.opengis.net/kml/2.2";
+
+        int features = doc.Descendants(kml + "Placemark").Count();
+        int vertices = doc.Descendants(kml + "coordinates").Sum(c => c.Value.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length);
+        Assert.True(features <= 10_000, $"{features} features");
+        Assert.True(vertices <= 250_000, $"{vertices} vertices");
+        Assert.Equal(1 + 3, features); // location pin + one per category
+        Assert.True(result.Omitted > 0);
+    }
+}

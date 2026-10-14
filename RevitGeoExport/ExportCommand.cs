@@ -68,6 +68,7 @@ namespace RevitGeoExport
 
             var written = new List<string>();
             GlbResult earthModel = null;
+            KmlResult webKml = null;
             GlbResult glb = null;
             try
             {
@@ -83,6 +84,11 @@ namespace RevitGeoExport
 
                 if (settings.WriteKmz)
                 {
+                    // Earth Web ignores 3D models inside KMZ, but places 3D polygons itself: the architecture as
+                    // faces, kept within its import limits.
+                    written.Add(Write(settings.OutputBasePath + WebKmzSuffix,
+                        p => webKml = KmlWriter.WriteKmz(p, placement, meshes, ExportOptions.ForGoogleEarthWeb(options))));
+
                     // The real 3D model (COLLADA) with its location: Google Earth Pro opens it in place.
                     written.Add(Write(settings.OutputBasePath + ProKmzSuffix,
                         p => earthModel = ColladaKmzWriter.Write(p, placement, meshes, options)));
@@ -98,11 +104,12 @@ namespace RevitGeoExport
                 return Result.Failed;
             }
 
-            ShowResult(meshes, view, placement, earthModel ?? glb, glb, written);
+            ShowResult(meshes, view, placement, earthModel ?? glb, glb, webKml, written);
             return Result.Succeeded;
         }
 
         private const string GlbSuffix = "_GoogleEarthWeb_3D.glb";
+        private const string WebKmzSuffix = "_GoogleEarthWeb.kmz";
         private const string ProKmzSuffix = "_GoogleEarthPro_3D.kmz";
 
         private static string Write(string path, Action<string> write)
@@ -122,11 +129,13 @@ namespace RevitGeoExport
             }
         }
 
-        private static void ShowResult(List<GeoMesh> meshes, View3D view, IGeoPlacement placement, GlbResult earthModel, GlbResult glb, List<string> written)
+        private static void ShowResult(List<GeoMesh> meshes, View3D view, IGeoPlacement placement, GlbResult earthModel, GlbResult glb, KmlResult webKml, List<string> written)
         {
             string trimmed = earthModel != null && earthModel.Omitted > 0
                 ? $"The 3D model leaves out the {earthModel.Omitted:N0} smallest elements to stay a manageable size.\n"
                 : "";
+            if (webKml != null && webKml.Omitted > 0)
+                trimmed += $"To fit Google Earth Web's import limits, its KMZ leaves out the {webKml.Omitted:N0} smallest elements.\n";
             string model = glb == null ? "" : glb.Instructions(Path.GetFileName(written.First(p => p.EndsWith(GlbSuffix, StringComparison.OrdinalIgnoreCase)))) + "\n\n";
             var dialog = new TaskDialog("Place model on map")
             {
@@ -142,7 +151,7 @@ namespace RevitGeoExport
             var html = written.FirstOrDefault(p => p.EndsWith(".html", StringComparison.OrdinalIgnoreCase));
             if (kmz != null)
                 dialog.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, "Open in Google Earth Pro (places itself)",
-                    "The full 3D architecture, already in position. For earth.google.com use the .glb instead.");
+                    "The full 3D architecture, already in position. For earth.google.com, import the " + WebKmzSuffix + " file (Projects › Import KML file).");
             if (html != null)
                 dialog.AddCommandLink(TaskDialogCommandLinkId.CommandLink2, "Open the 3D map (places itself)",
                     "The real 3D model on satellite imagery in your browser; nothing to set up.");
