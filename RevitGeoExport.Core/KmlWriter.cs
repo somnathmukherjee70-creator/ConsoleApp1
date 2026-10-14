@@ -14,23 +14,25 @@ namespace RevitGeoExport.Core
     /// </summary>
     public static class KmlWriter
     {
-        public static void WriteKmz(string path, IGeoPlacement placement, IReadOnlyCollection<GeoMesh> meshes, ExportOptions options)
+        public static KmlResult WriteKmz(string path, IGeoPlacement placement, IReadOnlyCollection<GeoMesh> meshes, ExportOptions options)
         {
             using (var file = File.Create(path))
             using (var zip = new ZipArchive(file, ZipArchiveMode.Create))
             using (var entry = zip.CreateEntry("doc.kml", CompressionLevel.Optimal).Open())
             {
-                WriteKml(entry, placement, meshes, options);
+                return WriteKml(entry, placement, meshes, options);
             }
         }
 
-        public static void WriteKml(Stream stream, IGeoPlacement placement, IReadOnlyCollection<GeoMesh> meshes, ExportOptions options)
+        public static KmlResult WriteKml(Stream stream, IGeoPlacement placement, IReadOnlyCollection<GeoMesh> all, ExportOptions options)
         {
+            var meshes = WithinBudget(all, options.MaxKmlPoints);
             var altitude = new AltitudeResolver(options, placement, meshes);
             var center = placement.Center(meshes);
             string altitudeMode = altitude.IsRelativeToGround ? "relativeToGround" : "absolute";
 
-            var settings = new XmlWriterSettings { Indent = true, Encoding = new UTF8Encoding(false) };
+            // No indentation: on big models whitespace alone adds tens of megabytes.
+            var settings = new XmlWriterSettings { Indent = false, Encoding = new UTF8Encoding(false) };
             using (var xml = XmlWriter.Create(stream, settings))
             {
                 xml.WriteStartDocument();
@@ -38,6 +40,9 @@ namespace RevitGeoExport.Core
                 xml.WriteStartElement("Document");
                 xml.WriteElementString("name", options.DocumentName);
                 xml.WriteElementString("open", "1");
+                if (meshes.Count < all.Count)
+                    xml.WriteElementString("description",
+                        $"{all.Count - meshes.Count} of the smallest elements were left out to keep the file small enough for Google Earth.");
 
                 WriteLookAt(xml, center, meshes);
 
@@ -59,6 +64,37 @@ namespace RevitGeoExport.Core
                 xml.WriteEndElement(); // Document
                 xml.WriteEndElement(); // kml
             }
+
+            return new KmlResult(meshes.Count, all.Count - meshes.Count);
+        }
+
+        /// <summary>Keeps the largest elements that fit the point budget, so the building's shape survives.</summary>
+        internal static List<GeoMesh> WithinBudget(IReadOnlyCollection<GeoMesh> meshes, int maxPoints)
+        {
+            if (maxPoints <= 0 || meshes.Sum(m => (long)m.KmlPointCount) <= maxPoints)
+                return meshes.ToList();
+
+            var kept = new List<GeoMesh>();
+            long used = 0;
+            foreach (var mesh in meshes.OrderByDescending(Size))
+            {
+                if (used + mesh.KmlPointCount > maxPoints)
+                    continue;
+                kept.Add(mesh);
+                used += mesh.KmlPointCount;
+            }
+
+            return kept;
+        }
+
+        private static double Size(GeoMesh mesh)
+        {
+            if (mesh.Vertices.Count == 0)
+                return 0;
+            double dx = mesh.Vertices.Max(v => v.X) - mesh.Vertices.Min(v => v.X);
+            double dy = mesh.Vertices.Max(v => v.Y) - mesh.Vertices.Min(v => v.Y);
+            double dz = mesh.Vertices.Max(v => v.Z) - mesh.Vertices.Min(v => v.Z);
+            return dx * dx + dy * dy + dz * dz;
         }
 
         private static void WriteLookAt(XmlWriter xml, (double Longitude, double Latitude) center, IReadOnlyCollection<GeoMesh> meshes)
@@ -110,7 +146,7 @@ namespace RevitGeoExport.Core
 
         private static void WriteMeshPlacemark(XmlWriter xml, GeoMesh mesh, IGeoPlacement placement, AltitudeResolver altitude, string altitudeMode)
         {
-            if (mesh.TriangleCount == 0)
+            if (mesh.IsEmpty)
                 return;
 
             xml.WriteStartElement("Placemark");
@@ -120,31 +156,56 @@ namespace RevitGeoExport.Core
             xml.WriteStartElement("MultiGeometry");
 
             var ring = new StringBuilder();
+            var triangle = new List<Vec3>(3);
             for (int t = 0; t < mesh.TriangleCount; t++)
             {
-                ring.Clear();
-                for (int corner = 0; corner <= 3; corner++)
-                {
-                    // A KML ring repeats its first point to close it.
-                    var v = mesh.Vertices[mesh.Indices[t * 3 + corner % 3]];
-                    var (lon, lat) = placement.ToLonLat(v.X, v.Y);
-                    if (corner > 0)
-                        ring.Append(' ');
-                    ring.Append(Format(lon, 8)).Append(',').Append(Format(lat, 8)).Append(',').Append(Format(altitude.Resolve(v.Z), 3));
-                }
-
-                xml.WriteStartElement("Polygon");
-                xml.WriteElementString("altitudeMode", altitudeMode);
-                xml.WriteStartElement("outerBoundaryIs");
-                xml.WriteStartElement("LinearRing");
-                xml.WriteElementString("coordinates", ring.ToString());
-                xml.WriteEndElement();
-                xml.WriteEndElement();
-                xml.WriteEndElement();
+                triangle.Clear();
+                for (int corner = 0; corner < 3; corner++)
+                    triangle.Add(mesh.Vertices[mesh.Indices[t * 3 + corner]]);
+                WritePolygon(xml, triangle, null, placement, altitude, altitudeMode, ring);
             }
+
+            foreach (var polygon in mesh.Polygons)
+                WritePolygon(xml, polygon.Outer, polygon.Holes, placement, altitude, altitudeMode, ring);
 
             xml.WriteEndElement(); // MultiGeometry
             xml.WriteEndElement(); // Placemark
+        }
+
+        private static void WritePolygon(XmlWriter xml, List<Vec3> outer, List<List<Vec3>>? holes, IGeoPlacement placement,
+            AltitudeResolver altitude, string altitudeMode, StringBuilder ring)
+        {
+            xml.WriteStartElement("Polygon");
+            xml.WriteElementString("altitudeMode", altitudeMode);
+            WriteRing(xml, "outerBoundaryIs", outer, placement, altitude, ring);
+            if (holes != null)
+            {
+                foreach (var hole in holes)
+                    WriteRing(xml, "innerBoundaryIs", hole, placement, altitude, ring);
+            }
+
+            xml.WriteEndElement();
+        }
+
+        private static void WriteRing(XmlWriter xml, string boundary, List<Vec3> points, IGeoPlacement placement, AltitudeResolver altitude, StringBuilder ring)
+        {
+            ring.Clear();
+            for (int i = 0; i <= points.Count; i++)
+            {
+                // A KML ring repeats its first point to close it.
+                var v = points[i % points.Count];
+                var (lon, lat) = placement.ToLonLat(v.X, v.Y);
+                if (i > 0)
+                    ring.Append(' ');
+                // 7 decimals is about 1 cm; more only makes the file bigger.
+                ring.Append(Format(lon, 7)).Append(',').Append(Format(lat, 7)).Append(',').Append(Format(altitude.Resolve(v.Z), 2));
+            }
+
+            xml.WriteStartElement(boundary);
+            xml.WriteStartElement("LinearRing");
+            xml.WriteElementString("coordinates", ring.ToString());
+            xml.WriteEndElement();
+            xml.WriteEndElement();
         }
 
         private static string StyleId(string category)
@@ -155,7 +216,7 @@ namespace RevitGeoExport.Core
             return id.ToString();
         }
 
-        internal static string Format(double value, int decimals = 8) =>
-            System.Math.Round(value, decimals).ToString("0.########", CultureInfo.InvariantCulture);
+        internal static string Format(double value, int decimals = 7) =>
+            System.Math.Round(value, decimals).ToString("0.#######", CultureInfo.InvariantCulture);
     }
 }

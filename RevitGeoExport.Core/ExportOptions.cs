@@ -17,6 +17,12 @@ namespace RevitGeoExport.Core
         public string DocumentName { get; set; } = "Revit model";
         public AltitudeMode AltitudeMode { get; set; } = AltitudeMode.OnGround;
         public double GroundOffsetMeters { get; set; }
+
+        /// <summary>
+        /// Most coordinates written to a KMZ. Beyond this Google Earth (especially Earth Web, in the
+        /// browser) runs out of memory, so the smallest elements are left out. 0 means no limit.
+        /// </summary>
+        public int MaxKmlPoints { get; set; } = 300_000;
     }
 
     /// <summary>Resolves a mesh vertex height to the altitude written to the map.</summary>

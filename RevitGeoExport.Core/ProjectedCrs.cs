@@ -33,7 +33,7 @@ namespace RevitGeoExport.Core
         private readonly double _centralMeridian;
         private readonly double _falseNorthing;
         private readonly double _k0;
-        private readonly LambertConic _lambert;
+        private readonly LambertConic? _lambert;
 
         private ProjectedCrs(int epsg, string name, bool webMercator, double centralMeridianDegrees = 0, double falseNorthing = 0, double scale = UtmScale)
         {
@@ -238,7 +238,7 @@ namespace RevitGeoExport.Core
             private const double UsSurveyFoot = 1200.0 / 3937;
             private static readonly double E = Math.Sqrt(F * (2 - F));
 
-            private readonly double _lon0, _falseEasting, _falseNorthing, _n, _af, _rho0;
+            private readonly double _lon0, _falseEasting, _n, _af, _rho0;
 
             private LambertConic(double lat0, double lon0, double lat1, double lat2, double falseEastingMeters, double unitMeters)
             {
@@ -273,12 +273,12 @@ namespace RevitGeoExport.Core
             {
                 double rho = _af * Math.Pow(T(phi), _n);
                 double theta = _n * (lambda - _lon0);
-                return (_falseEasting + rho * Math.Sin(theta), _falseNorthing + _rho0 - rho * Math.Cos(theta));
+                return (_falseEasting + rho * Math.Sin(theta), _rho0 - rho * Math.Cos(theta));
             }
 
             public (double Longitude, double Latitude) Inverse(double x, double y)
             {
-                double dx = x - _falseEasting, dy = _rho0 - (y - _falseNorthing);
+                double dx = x - _falseEasting, dy = _rho0 - y; // All supported zones have false northing 0.
                 double rho = Math.Sign(_n) * Math.Sqrt(dx * dx + dy * dy);
                 double t = Math.Pow(rho / _af, 1 / _n);
                 double theta = Math.Atan2(dx, dy);

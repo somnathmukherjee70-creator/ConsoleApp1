@@ -117,8 +117,12 @@ dotnet test RevitGeoExport.Core.Tests
 
 ## Limits
 
-- Big models give big KMZ files, because Google Earth draws every triangle as a polygon.
-  Export from a 3D view with only the categories you need, or use Coarse detail.
+- Google Earth, especially Earth Web in the browser, runs out of memory on large KML files.
+  So *Include › Exterior shell* (the default) leaves out furniture, fixtures and MEP, flat faces
+  are written as single polygons, and the KMZ is capped at 300,000 points by keeping the largest
+  elements. The result dialog says how many small elements were left out; the web map and
+  GeoJSON always have everything. For more detail, open the KMZ in Google Earth Pro (desktop),
+  or export from a 3D view with fewer categories visible.
 - The web map shows each element as an extruded footprint (the convex hull of its plan).
   That is right for walls, slabs, columns and boxes, but simplified for curved or
   L-shaped single elements. Google Earth always shows the true 3D shape.

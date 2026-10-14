@@ -23,6 +23,9 @@ namespace RevitGeoExport
         public bool WriteWebMap { get; set; } = true;
         public bool SaveLocationToProject { get; set; }
 
+        /// <summary>Only walls, roofs, floors, windows and other categories seen from outside.</summary>
+        public bool ExteriorOnly { get; set; } = true;
+
         /// <summary>Output path without extension; each format adds its own.</summary>
         public string OutputBasePath { get; set; }
     }
@@ -35,6 +38,7 @@ namespace RevitGeoExport
         private readonly TextBox _coordinates = new TextBox { Width = 260 };
         private readonly ComboBox _anchor = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 260 };
         private readonly NumericUpDown _rotation = Number(-360, 360, 2);
+        private readonly ComboBox _content = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 260 };
         private readonly ComboBox _altitude = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 260 };
         private readonly NumericUpDown _elevation = Number(-500, 9000, 2);
         private readonly NumericUpDown _offset = Number(-1000, 1000, 2);
@@ -61,6 +65,8 @@ namespace RevitGeoExport
             _coordinates.Text = string.Format(CultureInfo.InvariantCulture, "{0:0.0000000}, {1:0.0000000}", location.LatitudeDegrees, location.LongitudeDegrees);
             _anchor.Items.AddRange(new object[] { "Survey Point", "Project Base Point", "Internal Origin" });
             _anchor.SelectedIndex = 0;
+            _content.Items.AddRange(new object[] { "Exterior shell (best for Google Earth)", "Everything visible" });
+            _content.SelectedIndex = 0;
             _altitude.Items.AddRange(new object[] { "Sit on the terrain", "Above sea level" });
             _altitude.SelectedIndex = 0;
             // Shared coordinates in a survey system usually carry real elevations already.
@@ -80,6 +86,7 @@ namespace RevitGeoExport
             AddRow(grid, "Height", _altitude);
             AddRow(grid, "Height of Z = 0 above sea (m)", _elevation);
             AddRow(grid, "Vertical offset (m)", _offset);
+            AddRow(grid, "Include", _content);
             AddRow(grid, "Export", Stack(_kmz, _geoJson, _webMap));
             AddRow(grid, "Save to (no extension)", Stack(_output, browse));
             AddRow(grid, "", _save);
@@ -154,6 +161,7 @@ namespace RevitGeoExport
                 WriteGeoJson = _geoJson.Checked,
                 WriteWebMap = _webMap.Checked,
                 SaveLocationToProject = _save.Checked,
+                ExteriorOnly = _content.SelectedIndex == 0,
                 OutputBasePath = StripExtension(_output.Text.Trim()),
             };
         }

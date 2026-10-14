@@ -130,3 +130,65 @@ public class ProjectedWriterTests
         Assert.Contains("EPSG:32645", doc.RootElement.GetProperty("placement").GetString());
     }
 }
+
+public class KmlSizeTests
+{
+    private static readonly IGeoPlacement Placement = new GeoConverter(new GeoAnchor(40.0223719, -79.8866653));
+
+    private static GeoMesh Square(string id, double size)
+    {
+        var mesh = new GeoMesh(id, "Element " + id, "Walls");
+        mesh.AddTriangle(new Vec3(0, 0, 0), new Vec3(size, 0, 0), new Vec3(size, 0, size));
+        return mesh;
+    }
+
+    [Fact]
+    public void Wall_face_with_window_is_one_polygon_with_a_hole()
+    {
+        var mesh = new GeoMesh("1", "Wall", "Walls");
+        var outer = new List<Vec3> { new(0, 0, 0), new(10, 0, 0), new(10, 0, 3), new(0, 0, 3) };
+        var window = new List<Vec3> { new(4, 0, 1), new(6, 0, 1), new(6, 0, 2), new(4, 0, 2) };
+        mesh.AddPolygon(new GeoPolygon(outer, new List<List<Vec3>> { window }));
+
+        using var stream = new MemoryStream();
+        KmlWriter.WriteKml(stream, Placement, new[] { mesh }, new ExportOptions());
+        var doc = XDocument.Parse(Encoding.UTF8.GetString(stream.ToArray()));
+        XNamespace kml = "http://www.opengis.net/kml/2.2";
+
+        var polygon = Assert.Single(doc.Descendants(kml + "Polygon"));
+        Assert.Single(polygon.Elements(kml + "outerBoundaryIs"));
+        var hole = Assert.Single(polygon.Elements(kml + "innerBoundaryIs")).Value.Split(' ');
+        Assert.Equal(5, hole.Length);
+        Assert.Equal(hole[0], hole[4]);
+    }
+
+    [Fact]
+    public void Over_budget_keeps_the_largest_elements()
+    {
+        var meshes = new[] { Square("small", 0.1), Square("big", 20), Square("medium", 2) };
+
+        using var stream = new MemoryStream();
+        var result = KmlWriter.WriteKml(stream, Placement, meshes, new ExportOptions { MaxKmlPoints = 8 });
+        var text = Encoding.UTF8.GetString(stream.ToArray());
+
+        Assert.Equal(2, result.Written);
+        Assert.Equal(1, result.Omitted);
+        Assert.Contains("Element big", text);
+        Assert.Contains("Element medium", text);
+        Assert.DoesNotContain("Element small", text);
+        Assert.Contains("1 of the smallest elements were left out", text);
+    }
+
+    [Fact]
+    public void Output_is_compact()
+    {
+        using var stream = new MemoryStream();
+        KmlWriter.WriteKml(stream, Placement, new[] { Square("1", 5) }, new ExportOptions());
+        var text = Encoding.UTF8.GetString(stream.ToArray());
+
+        Assert.DoesNotContain("\n  ", text);
+        // Longitudes have at most 7 decimals.
+        Assert.Matches(@"-79\.\d{1,7},", text);
+        Assert.DoesNotMatch(@"-79\.\d{8}", text);
+    }
+}

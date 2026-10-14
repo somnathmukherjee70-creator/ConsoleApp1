@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Autodesk.Revit.DB;
 using RevitGeoExport.Core;
 
@@ -212,8 +213,37 @@ namespace RevitGeoExport
             BuiltInCategory.OST_SharedBasePoint,
         };
 
+        /// <summary>What defines a building's outside look; furniture, fixtures and MEP are left out.</summary>
+        private static readonly HashSet<BuiltInCategory> ExteriorShell = new HashSet<BuiltInCategory>
+        {
+            BuiltInCategory.OST_Walls,
+            BuiltInCategory.OST_CurtaSystem,
+            BuiltInCategory.OST_CurtainWallPanels,
+            BuiltInCategory.OST_CurtainWallMullions,
+            BuiltInCategory.OST_Roofs,
+            BuiltInCategory.OST_Fascia,
+            BuiltInCategory.OST_RoofSoffit,
+            BuiltInCategory.OST_Gutter,
+            BuiltInCategory.OST_Cornices,
+            BuiltInCategory.OST_Floors,
+            BuiltInCategory.OST_EdgeSlab,
+            BuiltInCategory.OST_Windows,
+            BuiltInCategory.OST_Doors,
+            BuiltInCategory.OST_Columns,
+            BuiltInCategory.OST_StructuralColumns,
+            BuiltInCategory.OST_StructuralFraming,
+            BuiltInCategory.OST_Stairs,
+            BuiltInCategory.OST_Ramps,
+            BuiltInCategory.OST_GenericModel,
+            BuiltInCategory.OST_Mass,
+        };
+
+        // Coarse tessellation of curved faces (0 = coarsest, 1 = finest); plenty for a map.
+        private const double CurvedFaceDetail = 0.2;
+
         /// <param name="view">When set, only elements visible in this 3D view are exported, as the view shows them.</param>
-        public static List<GeoMesh> Read(Document doc, View3D view, Func<XYZ, Vec3> toLocal)
+        /// <param name="exteriorOnly">Only the categories that make up the building's outside.</param>
+        public static List<GeoMesh> Read(Document doc, View3D view, Func<XYZ, Vec3> toLocal, bool exteriorOnly)
         {
             var options = new Options { ComputeReferences = false };
             FilteredElementCollector collector;
@@ -234,6 +264,8 @@ namespace RevitGeoExport
                 var category = element.Category;
                 if (category == null || category.CategoryType != CategoryType.Model || Excluded.Contains(category.BuiltInCategory))
                     continue;
+                if (exteriorOnly && !ExteriorShell.Contains(category.BuiltInCategory))
+                    continue;
 
                 var geometry = element.get_Geometry(options);
                 if (geometry == null)
@@ -241,7 +273,7 @@ namespace RevitGeoExport
 
                 var mesh = new GeoMesh(element.Id.ToString(), element.Name, category.Name);
                 AddGeometry(geometry, mesh, toLocal);
-                if (mesh.TriangleCount > 0)
+                if (!mesh.IsEmpty)
                     meshes.Add(mesh);
             }
 
@@ -256,7 +288,10 @@ namespace RevitGeoExport
                 {
                     case Solid solid when solid.Faces.Size > 0:
                         foreach (Face face in solid.Faces)
-                            AddMesh(face.Triangulate(), target, toLocal);
+                        {
+                            if (!(face is PlanarFace planar && TryAddPlanarFace(planar, target, toLocal)))
+                                AddMesh(face.Triangulate(CurvedFaceDetail), target, toLocal);
+                        }
                         break;
                     case Mesh mesh:
                         AddMesh(mesh, target, toLocal);
@@ -267,6 +302,59 @@ namespace RevitGeoExport
                         break;
                 }
             }
+        }
+
+        /// <summary>
+        /// Adds a flat face as one polygon with holes (e.g. a wall face with its windows cut out),
+        /// which is many times smaller in KML than its triangles. Returns false to fall back to triangles.
+        /// </summary>
+        private static bool TryAddPlanarFace(PlanarFace face, GeoMesh target, Func<XYZ, Vec3> toLocal)
+        {
+            IList<CurveLoop> loops;
+            try
+            {
+                loops = face.GetEdgesAsCurveLoops();
+            }
+            catch (Autodesk.Revit.Exceptions.ApplicationException)
+            {
+                return false;
+            }
+
+            var rings = new List<List<XYZ>>();
+            foreach (var loop in loops)
+            {
+                var ring = new List<XYZ>();
+                foreach (Curve curve in loop)
+                {
+                    var points = curve.Tessellate();
+                    // Each curve starts where the previous one ended; drop the repeated end point.
+                    for (int i = 0; i < points.Count - 1; i++)
+                        ring.Add(points[i]);
+                }
+
+                if (ring.Count < 3)
+                    return false;
+                rings.Add(ring);
+            }
+
+            if (rings.Count == 0)
+                return false;
+
+            // The outer boundary is the loop enclosing the largest area; the rest are holes.
+            var normal = face.FaceNormal;
+            var outer = rings.OrderByDescending(r => Math.Abs(Area(r, normal))).First();
+            var holes = rings.Where(r => r != outer).Select(r => r.Select(toLocal).ToList()).ToList();
+            target.AddPolygon(new GeoPolygon(outer.Select(toLocal).ToList(), holes));
+            return true;
+        }
+
+        /// <summary>Signed area of a planar ring, measured along the plane's normal (Newell's method).</summary>
+        private static double Area(List<XYZ> ring, XYZ normal)
+        {
+            var sum = XYZ.Zero;
+            for (int i = 0; i < ring.Count; i++)
+                sum += ring[i].CrossProduct(ring[(i + 1) % ring.Count]);
+            return sum.DotProduct(normal) / 2;
         }
 
         private static void AddMesh(Mesh mesh, GeoMesh target, Func<XYZ, Vec3> toLocal)

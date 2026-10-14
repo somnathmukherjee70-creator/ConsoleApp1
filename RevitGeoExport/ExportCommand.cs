@@ -49,7 +49,7 @@ namespace RevitGeoExport
                 view = null;
 
             var frame = settings.Crs != null ? location.ProjectedFrame() : location.LocalFrame(settings.Anchor);
-            var meshes = RevitModelReader.Read(doc, view, frame);
+            var meshes = RevitModelReader.Read(doc, view, frame, settings.ExteriorOnly);
             if (meshes.Count == 0)
             {
                 message = "No 3D model geometry was found to export.";
@@ -67,11 +67,12 @@ namespace RevitGeoExport
             };
 
             var written = new List<string>();
+            KmlResult kml = null;
             try
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(settings.OutputBasePath)));
                 if (settings.WriteKmz)
-                    written.Add(Write(settings.OutputBasePath + ".kmz", p => KmlWriter.WriteKmz(p, placement, meshes, options)));
+                    written.Add(Write(settings.OutputBasePath + ".kmz", p => kml = KmlWriter.WriteKmz(p, placement, meshes, options)));
                 if (settings.WriteGeoJson)
                     written.Add(Write(settings.OutputBasePath + ".geojson", p => GeoJsonWriter.Write(p, placement, meshes, options)));
                 if (settings.WriteWebMap)
@@ -83,7 +84,7 @@ namespace RevitGeoExport
                 return Result.Failed;
             }
 
-            ShowResult(meshes, view, placement, written);
+            ShowResult(meshes, view, placement, kml, written);
             return Result.Succeeded;
         }
 
@@ -104,14 +105,17 @@ namespace RevitGeoExport
             }
         }
 
-        private static void ShowResult(List<GeoMesh> meshes, View3D view, IGeoPlacement placement, List<string> written)
+        private static void ShowResult(List<GeoMesh> meshes, View3D view, IGeoPlacement placement, KmlResult kml, List<string> written)
         {
-            int triangles = meshes.Sum(m => m.TriangleCount);
+            string trimmed = kml != null && kml.Omitted > 0
+                ? $"The KMZ leaves out the {kml.Omitted:N0} smallest elements so Google Earth can open it; the web map has them all.\n"
+                : "";
             var dialog = new TaskDialog("Place model on map")
             {
-                MainInstruction = $"Exported {meshes.Count:N0} elements ({triangles:N0} triangles)",
+                MainInstruction = $"Exported {meshes.Count:N0} elements",
                 MainContent = (view != null ? $"Source: 3D view \"{view.Name}\".\n" : "Source: whole model (open a 3D view to export only what it shows).\n")
                     + placement.Description + ".\n"
+                    + trimmed
                     + string.Join("\n", written),
             };
 
