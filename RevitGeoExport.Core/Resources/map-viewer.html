@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>__MODEL_TITLE__ – Map</title>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <style>
+    html, body, #map { margin: 0; height: 100%; font-family: system-ui, sans-serif; }
+    #panel {
+      position: absolute; top: 10px; left: 10px; z-index: 1; max-width: 280px;
+      background: rgba(255, 255, 255, 0.92); border-radius: 8px; padding: 10px 12px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3); font-size: 13px;
+    }
+    #panel h1 { font-size: 15px; margin: 0 0 6px; }
+    #panel label { display: block; margin: 6px 0 2px; }
+    #panel .hint { color: #555; margin-top: 8px; }
+    #drop {
+      position: absolute; inset: 0; z-index: 2; display: none; align-items: center; justify-content: center;
+      background: rgba(20, 60, 120, 0.4); color: #fff; font-size: 22px;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div id="panel">
+    <h1 id="title">__MODEL_TITLE__</h1>
+    <div id="stats">No model loaded.</div>
+    <label>Base map
+      <select id="basemap">
+        <option value="satellite">Satellite</option>
+        <option value="streets">Streets</option>
+      </select>
+    </label>
+    <label>Model opacity <input id="opacity" type="range" min="0.1" max="1" step="0.05" value="0.9"></label>
+    <div class="hint">Right-drag or Ctrl-drag to tilt/rotate. Click an element for details. Drop another exported .geojson file here to load it.</div>
+  </div>
+  <div id="drop">Drop a .geojson file</div>
+
+  <script>
+    // Filled in by the Revit exporter. Leave as null to start empty and use drag & drop.
+    const MODEL = /*__MODEL_GEOJSON__*/null;
+
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [0, 20],
+      zoom: 2,
+      pitch: 60,
+      maxPitch: 85,
+      style: {
+        version: 8,
+        sources: {
+          satellite: {
+            type: 'raster', tileSize: 256, maxzoom: 19,
+            tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+            attribution: 'Imagery © Esri, Maxar, Earthstar Geographics, and the GIS User Community'
+          },
+          streets: {
+            type: 'raster', tileSize: 256, maxzoom: 19,
+            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+            attribution: '© OpenStreetMap contributors'
+          }
+        },
+        layers: [
+          { id: 'satellite', type: 'raster', source: 'satellite' },
+          { id: 'streets', type: 'raster', source: 'streets', layout: { visibility: 'none' } }
+        ]
+      }
+    });
+    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }));
+    map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }));
+
+    function loadModel(geojson) {
+      if (map.getLayer('model')) map.removeLayer('model');
+      if (map.getSource('model')) map.removeSource('model');
+
+      map.addSource('model', { type: 'geojson', data: geojson });
+      map.addLayer({
+        id: 'model',
+        type: 'fill-extrusion',
+        source: 'model',
+        paint: {
+          'fill-extrusion-color': ['get', 'color'],
+          'fill-extrusion-base': ['get', 'base_height'],
+          'fill-extrusion-height': ['get', 'height'],
+          'fill-extrusion-opacity': Number(document.getElementById('opacity').value)
+        }
+      });
+
+      if (geojson.name) document.getElementById('title').textContent = geojson.name;
+      const count = geojson.features.length;
+      const a = geojson.anchor;
+      document.getElementById('stats').textContent = a
+        ? `${count} elements · anchor ${a.latitude.toFixed(6)}, ${a.longitude.toFixed(6)}`
+        : `${count} elements`;
+
+      const bounds = new maplibregl.LngLatBounds();
+      for (const f of geojson.features)
+        for (const c of f.geometry.coordinates[0]) bounds.extend(c);
+      if (!bounds.isEmpty()) map.fitBounds(bounds, { padding: 200, pitch: 55, maxZoom: 18.5, duration: 0 });
+    }
+
+    // style.load rather than load: 'load' waits for imagery tiles, so the model would never appear offline.
+    map.once('style.load', () => { if (MODEL) loadModel(MODEL); });
+
+    map.on('click', 'model', e => {
+      const p = e.features[0].properties;
+      new maplibregl.Popup()
+        .setLngLat(e.lngLat)
+        .setText(`${p.name} — ${p.category} (ID ${p.elementId})`)
+        .addTo(map);
+    });
+    map.on('mouseenter', 'model', () => map.getCanvas().style.cursor = 'pointer');
+    map.on('mouseleave', 'model', () => map.getCanvas().style.cursor = '');
+
+    document.getElementById('basemap').addEventListener('change', e => {
+      const satellite = e.target.value === 'satellite';
+      map.setLayoutProperty('satellite', 'visibility', satellite ? 'visible' : 'none');
+      map.setLayoutProperty('streets', 'visibility', satellite ? 'none' : 'visible');
+    });
+    document.getElementById('opacity').addEventListener('input', e => {
+      if (map.getLayer('model')) map.setPaintProperty('model', 'fill-extrusion-opacity', Number(e.target.value));
+    });
+
+    const drop = document.getElementById('drop');
+    window.addEventListener('dragover', e => { e.preventDefault(); drop.style.display = 'flex'; });
+    window.addEventListener('dragleave', e => { if (e.target === drop) drop.style.display = 'none'; });
+    window.addEventListener('drop', async e => {
+      e.preventDefault();
+      drop.style.display = 'none';
+      const file = e.dataTransfer.files[0];
+      if (!file) return;
+      try { loadModel(JSON.parse(await file.text())); }
+      catch (err) { alert('Could not read ' + file.name + ': ' + err.message); }
+    });
+  </script>
+</body>
+</html>

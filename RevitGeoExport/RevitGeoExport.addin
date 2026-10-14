@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copy this file to %AppData%\Autodesk\Revit\Addins\<version>\ and the build output to a
+     RevitGeoExport sub-folder next to it. See README.md. -->
+<RevitAddIns>
+  <AddIn Type="Application">
+    <Name>Revit Geo Export</Name>
+    <Assembly>RevitGeoExport\RevitGeoExport.dll</Assembly>
+    <AddInId>6C3B5E9A-2F4D-4F8B-9C1E-7A2D5B8E4F10</AddInId>
+    <FullClassName>RevitGeoExport.App</FullClassName>
+    <VendorId>RGEX</VendorId>
+    <VendorDescription>Places Revit models on Google Earth and live web maps.</VendorDescription>
+  </AddIn>
+</RevitAddIns>

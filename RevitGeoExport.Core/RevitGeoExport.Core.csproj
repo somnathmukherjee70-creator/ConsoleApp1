@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Revit-independent geo-referencing and export logic. netstandard2.0 so it loads in
+       Revit 2024 (.NET Framework 4.8) and Revit 2025+ (.NET 8). -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <RootNamespace>RevitGeoExport.Core</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\map-viewer.html" LogicalName="RevitGeoExport.Core.map-viewer.html" />
+  </ItemGroup>
+
+</Project>

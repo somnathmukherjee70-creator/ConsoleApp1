@@ -1,3 +1,6 @@
 <Solution>
   <Project Path="ConsoleApp1/ConsoleApp1.csproj" />
+  <Project Path="RevitGeoExport.Core/RevitGeoExport.Core.csproj" />
+  <Project Path="RevitGeoExport.Core.Tests/RevitGeoExport.Core.Tests.csproj" />
+  <Project Path="RevitGeoExport/RevitGeoExport.csproj" />
 </Solution>
