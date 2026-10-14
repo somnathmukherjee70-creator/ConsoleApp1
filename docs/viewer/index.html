@@ -1,6 +1,12 @@
-<title>Sightline BIM Viewer</title>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>IFC Viewer · Sightline</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Open IFC models in your browser: explore the model tree and properties, cut sections in any direction, merge files, measure, and export reports. Files never leave your computer.">
+<link rel="canonical" href="https://somnathmukherjee70-creator.github.io/ConsoleApp1/viewer/">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
@@ -53,6 +59,8 @@ button, input, select { font: inherit; color: inherit; }
 .bar { display: flex; align-items: center; gap: 12px; padding-block: 10px; flex-wrap: wrap; }
 .brand { display: flex; align-items: baseline; gap: 10px; margin-right: auto; min-width: 0; }
 .brand h1 { font-family: var(--font-display); font-weight: 600; font-size: 22px; letter-spacing: .02em; margin: 0; text-transform: uppercase; }
+.home-link { color: inherit; text-decoration: none; }
+.home-link:hover { color: var(--accent); }
 .brand .model-name { color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .tools { display: flex; gap: 6px; flex-wrap: wrap; }
 .btn {
@@ -65,6 +73,14 @@ button, input, select { font: inherit; color: inherit; }
 .btn.small { height: 26px; padding: 0 8px; font-size: 12px; }
 .btn svg { width: 15px; height: 15px; flex: none; }
 .only-narrow { display: none; }
+.menu { position: relative; }
+.menu > summary { list-style: none; }
+.menu > summary::-webkit-details-marker { display: none; }
+.menu[open] > summary { border-color: var(--accent); color: var(--accent); }
+.menu-list { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; width: 290px; max-width: calc(100vw - 32px); background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); box-shadow: 0 12px 30px rgb(0 0 0 / .16); padding: 4px; display: grid; }
+.menu-list button { display: grid; gap: 1px; text-align: left; border: 0; background: none; padding: 8px 10px; border-radius: 4px; cursor: pointer; }
+.menu-list button:hover, .menu-list button:focus-visible { background: var(--panel-2); }
+.menu-list span { color: var(--ink-2); font-size: 12px; }
 
 /* workspace */
 .work { flex: 1; min-height: 0; display: grid; grid-template-columns: 270px minmax(0, 1fr) 320px; gap: 12px; position: relative; }
@@ -199,10 +215,12 @@ table.sched tr.click:hover td { background: var(--panel-2); }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
+</head>
+<body>
 
 <header class="bar">
   <div class="brand">
-    <h1>Sightline</h1>
+    <h1><a href="../" class="home-link" title="Sightline home">Sightline</a></h1>
     <span class="model-name" id="modelName">Riverside Office Block</span>
   </div>
   <div class="tools">
@@ -217,6 +235,15 @@ table.sched tr.click:hover td { background: var(--panel-2); }
     <button class="btn primary" id="btnAppend" title="Add .ifc files to the current model (or drop them on the viewport)">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 3v10M3 8h10"/></svg><span class="label-txt">Add IFC</span>
     </button>
+    <details class="menu" id="exportMenu">
+      <summary class="btn"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4 2h6l3 3v9H4zM10 2v3h3M6.5 9.5h4M6.5 12h4"/></svg><span class="label-txt">Export report</span></summary>
+      <div class="menu-list" role="menu">
+        <button role="menuitem" data-export="pdf"><b>Model report</b><span>Printable summary with a 3D view, save as PDF</span></button>
+        <button role="menuitem" data-export="elements"><b>Element list</b><span>Every element with all its properties (CSV for Excel)</span></button>
+        <button role="menuitem" data-export="quantities"><b>Quantities</b><span>Count, length, area and volume by IFC class (CSV)</span></button>
+        <button role="menuitem" data-export="rooms"><b>Room schedule</b><span>Rooms with area and type (CSV)</span></button>
+      </div>
+    </details>
     <input type="file" id="fileInput" accept=".ifc" multiple hidden>
   </div>
 </header>
@@ -1636,37 +1663,244 @@ function renderProps() {
 }
 
 async function loadIfcProps(el) {
-  const { api } = ifc, id = M.files[el.file].ifcId;
   let html = '';
   try {
-    const line = api.GetLine(id, el.expressID, false);
-    const attrs = {};
-    for (const k of ['Name', 'Description', 'ObjectType', 'Tag', 'PredefinedType']) if (line[k]?.value != null) attrs[k] = ifcValue(line[k]);
-    html += psetHtml('Attributes', attrs);
-    const mats = await api.properties.getMaterialsProperties(id, el.expressID, false, true);
-    const matNames = mats.map((m) => m.Name?.value || m.LayerSetName?.value).filter(Boolean);
-    if (matNames.length) html += psetHtml('Material', { Material: matNames.join(', ') });
-    const sets = await api.properties.getPropertySets(id, el.expressID, false, true);
-    for (const set of sets) {
-      const rows = {};
-      for (const h of set.HasProperties || []) {
-        const p = api.GetLine(id, h.value);
-        if (p?.Name) rows[p.Name.value] = ifcValue(p.NominalValue);
-      }
-      for (const h of set.Quantities || []) {
-        const q = api.GetLine(id, h.value);
-        if (q?.Name) rows[q.Name.value] = ifcValue(q.LengthValue ?? q.AreaValue ?? q.VolumeValue ?? q.CountValue ?? q.WeightValue ?? q.TimeValue);
-      }
-      html += psetHtml(set.Name?.value || 'Property set', rows);
-    }
+    const props = await readProps(el);
+    html = Object.entries(props).map(([k, v]) => psetHtml(k, v)).join('');
   } catch (err) {
     console.error(err);
-    html += '<p class="muted">Some properties could not be read.</p>';
+    html = '<p class="muted">Some properties could not be read.</p>';
   }
   if (state.selected !== el) return;
   const loading = $('#psetLoading');
   if (loading) loading.outerHTML = html || '<p class="muted" style="padding-top:8px">No property sets on this element.</p>';
 }
+
+/* ---------- reports ---------- */
+// Property sets for one element as { setName: { prop: value } }. IFC files are read once and cached.
+async function readProps(el) {
+  if (el.psets && !el._ifcProps) return { ...(el.material ? { Identity: { Material: el.material } } : {}), ...el.psets };
+  if (el._ifcProps) return el._ifcProps;
+  const { api } = ifc, id = M.files[el.file].ifcId;
+  const out = {};
+  const line = api.GetLine(id, el.expressID, false);
+  const attrs = {};
+  for (const k of ['Name', 'LongName', 'Description', 'ObjectType', 'Tag', 'PredefinedType']) if (line[k]?.value != null) attrs[k] = ifcValue(line[k]);
+  out.Attributes = attrs;
+  const mats = await api.properties.getMaterialsProperties(id, el.expressID, false, true);
+  const matNames = mats.map((m) => m.Name?.value || m.LayerSetName?.value).filter(Boolean);
+  if (matNames.length) out.Material = { Material: matNames.join(', ') };
+  const sets = await api.properties.getPropertySets(id, el.expressID, false, true);
+  for (const set of sets) {
+    const rows = {};
+    for (const h of set.HasProperties || []) {
+      const p = api.GetLine(id, h.value);
+      if (p?.Name) rows[p.Name.value] = ifcValue(p.NominalValue);
+    }
+    for (const h of set.Quantities || []) {
+      const q = api.GetLine(id, h.value);
+      if (q?.Name) rows[q.Name.value] = ifcValue(q.LengthValue ?? q.AreaValue ?? q.VolumeValue ?? q.CountValue ?? q.WeightValue ?? q.TimeValue);
+    }
+    out[set.Name?.value || 'Property set'] = rows;
+  }
+  el._ifcProps = out;
+  return out;
+}
+// "23 700 mm" -> 23.7 (m), "60.47 m²" -> 60.47, 12 -> 12
+function num(v) {
+  if (typeof v === 'number') return v;
+  if (typeof v !== 'string') return NaN;
+  const n = parseFloat(v.replace(/\s/g, '').replace(',', '.'));
+  return /\dmm$/.test(v.replace(/\s/g, '')) ? n / 1000 : n;
+}
+const QTY_KEYS = {
+  length: ['Length'],
+  area: ['NetSideArea', 'NetArea', 'NetFloorArea', 'GrossArea', 'GrossSideArea', 'GrossFloorArea', 'Area', 'OuterSurfaceArea'],
+  volume: ['NetVolume', 'GrossVolume', 'Volume'],
+};
+function pickQty(props, keys) {
+  for (const k of keys) for (const set of Object.values(props)) if (set[k] != null && Number.isFinite(num(set[k]))) return num(set[k]);
+  return null;
+}
+
+async function collectReport() {
+  const els = M.elements.filter((e) => !M.files[e.file].removed);
+  const rows = [];
+  showBusy('Reading properties…');
+  for (let i = 0; i < els.length; i++) {
+    const el = els[i];
+    let props = {};
+    try { props = await readProps(el); } catch (err) { console.error(err); }
+    rows.push({ el, props, file: M.files[el.file], storey: M.storeys[el.storey] });
+    if (i % 40 === 39) { $('#busyText').textContent = `Reading properties… ${i + 1} of ${els.length}`; await nextFrame(); }
+  }
+  hideBusy();
+  return rows;
+}
+function quantityTable(rows) {
+  const by = new Map();
+  for (const r of rows) {
+    const k = r.el.ifcClass;
+    if (!by.has(k)) by.set(k, { cls: k, count: 0, length: 0, area: 0, volume: 0, hasL: 0, hasA: 0, hasV: 0 });
+    const g = by.get(k);
+    g.count++;
+    const L = pickQty(r.props, QTY_KEYS.length), A = pickQty(r.props, QTY_KEYS.area), V = pickQty(r.props, QTY_KEYS.volume);
+    if (L != null) { g.length += L; g.hasL++; }
+    if (A != null) { g.area += A; g.hasA++; }
+    if (V != null) { g.volume += V; g.hasV++; }
+  }
+  return [...by.values()].sort((a, b) => b.count - a.count);
+}
+function roomTable(rows) {
+  return rows.filter((r) => r.el.ifcClass === 'IfcSpace').map((r) => {
+    const area = r.el.area ?? pickQty(r.props, ['NetFloorArea', 'GrossFloorArea', 'NetArea', 'Area']);
+    const longName = r.props.Attributes?.LongName;
+    return {
+      name: r.el.name + (longName && longName !== r.el.name ? ` · ${longName}` : ''),
+      storey: r.storey.name, file: r.file.name, area,
+      type: r.el.roomType || (area != null ? classifyRoom(area) : '—'),
+    };
+  });
+}
+
+/* CSV */
+function csvCell(v) {
+  if (v == null) return '';
+  const s = typeof v === 'boolean' ? (v ? 'Yes' : 'No') : String(v);
+  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+function downloadFile(name, content, type) {
+  const blob = new Blob([content], { type });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+function downloadCsv(name, header, body) {
+  const text = '﻿' + [header, ...body].map((r) => r.map(csvCell).join(',')).join('\r\n');
+  downloadFile(name, text, 'text/csv;charset=utf-8');
+}
+const reportBase = () => liveFiles()[0].name.replace(/[^\w.-]+/g, '_');
+const r2 = (v) => (v == null ? '' : Math.round(v * 100) / 100);
+
+async function exportElementsCsv() {
+  const rows = await collectReport();
+  const cols = [];
+  const seen = new Set();
+  for (const r of rows) for (const [set, props] of Object.entries(r.props)) for (const k of Object.keys(props)) {
+    const c = `${set}.${k}`;
+    if (!seen.has(c)) { seen.add(c); cols.push(c); }
+  }
+  const header = ['Model', 'Storey', 'IFC class', 'Name', 'GlobalId', ...cols];
+  const body = rows.map((r) => [r.file.name, r.storey.name, r.el.ifcClass, r.el.name, r.el.guid,
+    ...cols.map((c) => { const i = c.indexOf('.'); return r.props[c.slice(0, i)]?.[c.slice(i + 1)]; })]);
+  downloadCsv(`${reportBase()}-elements.csv`, header, body);
+  toast(`Exported ${rows.length.toLocaleString()} elements with ${cols.length} property columns.`);
+}
+async function exportQuantitiesCsv() {
+  const rows = await collectReport();
+  const q = quantityTable(rows);
+  downloadCsv(`${reportBase()}-quantities.csv`, ['IFC class', 'Count', 'Total length', 'Total area', 'Total volume'],
+    q.map((g) => [g.cls, g.count, g.hasL ? r2(g.length) : '', g.hasA ? r2(g.area) : '', g.hasV ? r2(g.volume) : '']));
+  toast('Exported quantities by IFC class.');
+}
+async function exportRoomsCsv() {
+  const rows = await collectReport();
+  const rooms = roomTable(rows);
+  if (!rooms.length) return toast('This model has no rooms (IfcSpace) to export.', true);
+  downloadCsv(`${reportBase()}-rooms.csv`, ['Room', 'Storey', 'Model', 'Area (m²)', 'Type'], rooms.map((r) => [r.name, r.storey, r.file, r2(r.area), r.type]));
+  toast(`Exported ${rooms.length} rooms.`);
+}
+
+/* printable report */
+async function openPrintReport() {
+  const win = window.open('', '_blank');
+  const rows = await collectReport();
+  const gizmosWere = gizmos.visible;
+  gizmos.visible = false;
+  renderer.render(scene, camera);
+  const shot = renderer.domElement.toDataURL('image/png');
+  gizmos.visible = gizmosWere;
+  const files = liveFiles();
+  const q = quantityTable(rows);
+  const rooms = roomTable(rows);
+  const storeys = M.storeys.filter((s) => !M.files[s.file].removed);
+  const classes = [...new Set(rows.map((r) => r.el.ifcClass))].sort();
+  const count = (s, c) => rows.filter((r) => r.storey === s && r.el.ifcClass === c).length;
+  const fmtN = (v, ok) => (ok ? v.toLocaleString('en-GB', { maximumFractionDigits: 2 }) : '—');
+  const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  const hasIfc = files.some((f) => !f.sample);
+  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Model report · ${esc(files.map((f) => f.name).join(', '))}</title>
+<style>
+  @page { size: A4; margin: 16mm; }
+  body { font: 10.5pt/1.45 "IBM Plex Sans", system-ui, sans-serif; color: #1b221f; margin: 0 auto; max-width: 190mm; padding: 16px; }
+  h1 { font: 600 24pt/1.1 "Barlow Condensed", "Arial Narrow", sans-serif; text-transform: uppercase; letter-spacing: .02em; margin: 0 0 4px; }
+  h2 { font: 600 13pt "Barlow Condensed", "Arial Narrow", sans-serif; text-transform: uppercase; letter-spacing: .08em; margin: 22px 0 6px; border-bottom: 1.5px solid #1b221f; padding-bottom: 3px; }
+  .meta { color: #57615b; }
+  table { width: 100%; border-collapse: collapse; font-size: 9.5pt; }
+  th { text-align: left; font-weight: 600; border-bottom: 1px solid #1b221f; padding: 4px 6px; }
+  td { border-bottom: 1px solid #ccd3ca; padding: 3px 6px; }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; font-family: "IBM Plex Mono", ui-monospace, monospace; }
+  tr { break-inside: avoid; }
+  img { width: 100%; border: 1px solid #ccd3ca; margin-top: 12px; }
+  .note { color: #57615b; font-size: 9pt; margin-top: 6px; }
+  .bar { display: flex; gap: 8px; margin-bottom: 16px; }
+  .bar button { font: inherit; padding: 6px 12px; border: 1px solid #2b53c2; background: #2b53c2; color: #fff; border-radius: 5px; cursor: pointer; }
+  footer { margin-top: 26px; color: #57615b; font-size: 9pt; border-top: 1px solid #ccd3ca; padding-top: 6px; }
+  @media print { .bar { display: none; } body { padding: 0; } }
+</style></head><body>
+<div class="bar"><button onclick="print()">Print or save as PDF</button></div>
+<h1>Model report</h1>
+<div class="meta">${esc(date)} · ${rows.length.toLocaleString()} elements · ${storeys.length} storeys · ${classes.length} IFC classes</div>
+<h2>Files</h2>
+<table><thead><tr><th>File</th><th>Schema</th><th class="n">Elements</th></tr></thead><tbody>
+${files.map((f) => `<tr><td>${esc(f.name)}${f.sample ? ' (sample)' : ''}</td><td>${esc(f.schema || '—')}</td><td class="n">${rows.filter((r) => r.file === f).length}</td></tr>`).join('')}
+</tbody></table>
+<img src="${shot}" alt="3D view of the model">
+<h2>Elements by storey</h2>
+<table><thead><tr><th>Storey</th>${classes.map((c) => `<th class="n">${esc(c.replace(/^Ifc/, ''))}</th>`).join('')}<th class="n">Total</th></tr></thead><tbody>
+${storeys.map((s) => `<tr><td>${esc(s.name)}${files.length > 1 ? ` <span class="meta">· ${esc(M.files[s.file].name)}</span>` : ''}</td>${classes.map((c) => `<td class="n">${count(s, c) || ''}</td>`).join('')}<td class="n">${rows.filter((r) => r.storey === s).length}</td></tr>`).join('')}
+</tbody></table>
+<h2>Quantities by IFC class</h2>
+<table><thead><tr><th>IFC class</th><th class="n">Count</th><th class="n">Length</th><th class="n">Area</th><th class="n">Volume</th></tr></thead><tbody>
+${q.map((g) => `<tr><td>${esc(g.cls)}</td><td class="n">${g.count}</td><td class="n">${fmtN(g.length, g.hasL)}</td><td class="n">${fmtN(g.area, g.hasA)}</td><td class="n">${fmtN(g.volume, g.hasV)}</td></tr>`).join('')}
+</tbody></table>
+<p class="note">Totals add up the quantity sets stored in the model.${hasIfc ? ' IFC quantities are shown in the units the file uses (usually m, m² and m³).' : ' Lengths in m, areas in m², volumes in m³.'} A dash means the file has no such quantity for that class.</p>
+${rooms.length ? `<h2>Room schedule</h2>
+<table><thead><tr><th>Room</th><th>Storey</th><th>Type</th><th class="n">Area (m²)</th></tr></thead><tbody>
+${rooms.map((r) => `<tr><td>${esc(r.name)}</td><td>${esc(r.storey)}</td><td>${esc(r.type)}</td><td class="n">${r.area != null ? r.area.toFixed(2) : '—'}</td></tr>`).join('')}
+<tr><td colspan="3"><b>Total</b></td><td class="n"><b>${rooms.reduce((a, r) => a + (r.area || 0), 0).toFixed(2)}</b></td></tr>
+</tbody></table>
+<p class="note">Room types: under 10 m² Store, under 30 m² Office, otherwise Meeting room.</p>` : ''}
+<footer>Made with Sightline IFC Viewer. The model was read in the browser and never uploaded.</footer>
+</body></html>`;
+  if (win) {
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+  } else {
+    downloadFile(`${reportBase()}-report.html`, html, 'text/html');
+    toast('Your browser blocked the report window, so it was downloaded instead. Open it and print to PDF.');
+  }
+}
+$('#exportMenu').addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-export]');
+  if (!b) return;
+  $('#exportMenu').open = false;
+  if (!M) return;
+  try {
+    ({ elements: exportElementsCsv, quantities: exportQuantitiesCsv, rooms: exportRoomsCsv, pdf: openPrintReport })[b.dataset.export]();
+  } catch (err) {
+    console.error(err);
+    hideBusy();
+    toast(`The export failed: ${err.message || err}`, true);
+  }
+});
+document.addEventListener('click', (e) => { if (!e.target.closest('#exportMenu')) $('#exportMenu').open = false; });
 
 /* ---------- panels (narrow screens) ---------- */
 function closePanels() {
@@ -1740,3 +1974,5 @@ applyTheme();
 buildSample();
 requestAnimationFrame(tick);
 </script>
+</body>
+</html>

@@ -1,21 +1,41 @@
-# Sightline BIM Viewer
+# Sightline: free online IFC viewer
 
-An interactive, browser-based BIM model viewer built with [three.js](https://threejs.org) and
-[web-ifc](https://github.com/ThatOpen/engine_web-ifc). It is a single file, `index.html`, with no build step.
+A website where people open IFC building models in their browser, review them and export reports.
+Built with [three.js](https://threejs.org) and [web-ifc](https://github.com/ThatOpen/engine_web-ifc).
+Files are processed in the visitor's browser and never uploaded, so there is no server to run.
 
-## Run it
+```
+docs/
+  index.html        landing page (search-engine friendly)
+  viewer/index.html the viewer app (one file, no build step)
+  assets/           favicon and the screenshot used on the landing page
+  robots.txt, sitemap.xml
+```
+
+## Publish it with GitHub Pages (free)
+
+1. The repository must be public (or on a paid GitHub plan).
+2. On GitHub: **Settings → Pages → Build and deployment → Deploy from a branch**.
+3. Choose the branch with this code and the **`/docs`** folder, then **Save**.
+4. After a minute the site is live at https://somnathmukherjee70-creator.github.io/ConsoleApp1/
+
+To make it show up in Google, add the site in [Google Search Console](https://search.google.com/search-console)
+and submit `sitemap.xml`. If you later use your own domain, update the addresses in
+`docs/index.html`, `docs/viewer/index.html`, `docs/robots.txt` and `docs/sitemap.xml`.
+
+## Run it locally
 
 ```bash
-cd BimViewer
+cd docs
 python3 -m http.server 8000   # or: npx serve .
 ```
 
-Then open http://localhost:8000. The page opens on a built-in sample building (Riverside Office Block).
+Then open http://localhost:8000 for the landing page, or http://localhost:8000/viewer/ for the viewer. The page opens on a built-in sample building (Riverside Office Block).
 Use **Open IFC** to replace the model with your own `.ifc` files (IFC2X3 / IFC4), or **Add IFC**
 (or drag files onto the viewport) to merge more files into the current model.
 Libraries are loaded from cdn.jsdelivr.net, so the browser needs internet access.
 
-## Features
+## Viewer features
 
 - Orbit, pan, zoom; Iso / Plan / South / East / Fit camera presets
 - Click to select, double-click to zoom to an element; hover highlight
@@ -34,6 +54,9 @@ Libraries are loaded from cdn.jsdelivr.net, so the browser needs internet access
   - Drag the arrows in 3D, or use each cut's slider; rotate a plane to any angle with Turn and Tilt;
     flip it to cut the other side; stack as many cuts as you like
   - Cut faces are filled solid, like poché on a drawing
+- **Export reports**: a printable model report (save as PDF) with a 3D view, element counts per storey,
+  quantity totals and a room schedule; CSV files (open in Excel) of every element with all its
+  properties, quantities by IFC class, and rooms
 - X-ray mode and exploded storeys
 - Two-point measuring tool (distance and height difference in mm)
 - Room tags and a room schedule; room types use the same rule as `ConsoleApp1/Program.cs`
