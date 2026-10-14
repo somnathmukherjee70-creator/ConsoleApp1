@@ -72,7 +72,13 @@ namespace RevitGeoExport
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(settings.OutputBasePath)));
                 if (settings.WriteKmz)
-                    written.Add(Write(settings.OutputBasePath + ".kmz", p => kml = KmlWriter.WriteKmz(p, placement, meshes, options)));
+                {
+                    // Earth Web only accepts simple shapes, so it gets a massing model; Earth Pro gets full 3D.
+                    written.Add(Write(settings.OutputBasePath + WebKmzSuffix,
+                        p => KmlWriter.WriteKmz(p, placement, meshes, WithMode(options, KmlMode.Massing))));
+                    written.Add(Write(settings.OutputBasePath + ProKmzSuffix,
+                        p => kml = KmlWriter.WriteKmz(p, placement, meshes, WithMode(options, KmlMode.Detailed3D))));
+                }
                 if (settings.WriteGeoJson)
                     written.Add(Write(settings.OutputBasePath + ".geojson", p => GeoJsonWriter.Write(p, placement, meshes, options)));
                 if (settings.WriteWebMap)
@@ -87,6 +93,18 @@ namespace RevitGeoExport
             ShowResult(meshes, view, placement, kml, written);
             return Result.Succeeded;
         }
+
+        private const string WebKmzSuffix = "_GoogleEarthWeb.kmz";
+        private const string ProKmzSuffix = "_GoogleEarthPro_3D.kmz";
+
+        private static ExportOptions WithMode(ExportOptions options, KmlMode mode) => new ExportOptions
+        {
+            DocumentName = options.DocumentName,
+            AltitudeMode = options.AltitudeMode,
+            GroundOffsetMeters = options.GroundOffsetMeters,
+            MaxKmlPoints = options.MaxKmlPoints,
+            KmlMode = mode,
+        };
 
         private static string Write(string path, Action<string> write)
         {
@@ -108,7 +126,7 @@ namespace RevitGeoExport
         private static void ShowResult(List<GeoMesh> meshes, View3D view, IGeoPlacement placement, KmlResult kml, List<string> written)
         {
             string trimmed = kml != null && kml.Omitted > 0
-                ? $"The KMZ leaves out the {kml.Omitted:N0} smallest elements so Google Earth can open it; the web map has them all.\n"
+                ? $"The 3D KMZ leaves out the {kml.Omitted:N0} smallest elements so Google Earth can open it; the web map has them all.\n"
                 : "";
             var dialog = new TaskDialog("Place model on map")
             {
@@ -119,10 +137,11 @@ namespace RevitGeoExport
                     + string.Join("\n", written),
             };
 
-            var kmz = written.FirstOrDefault(p => p.EndsWith(".kmz", StringComparison.OrdinalIgnoreCase));
+            var kmz = written.FirstOrDefault(p => p.EndsWith(ProKmzSuffix, StringComparison.OrdinalIgnoreCase));
             var html = written.FirstOrDefault(p => p.EndsWith(".html", StringComparison.OrdinalIgnoreCase));
             if (kmz != null)
-                dialog.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, "Open in Google Earth Pro", "Or drag the .kmz into earth.google.com › Projects › Import.");
+                dialog.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, "Open the 3D model in Google Earth Pro",
+                    "For earth.google.com, import the " + WebKmzSuffix + " file instead (Projects › Import KML file).");
             if (html != null)
                 dialog.AddCommandLink(TaskDialogCommandLinkId.CommandLink2, "Open the live web map", "Satellite and street map in your browser.");
             dialog.AddCommandLink(TaskDialogCommandLinkId.CommandLink3, "Open the export folder");

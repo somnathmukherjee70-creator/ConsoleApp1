@@ -42,7 +42,7 @@ namespace RevitGeoExport
         private readonly ComboBox _altitude = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 260 };
         private readonly NumericUpDown _elevation = Number(-500, 9000, 2);
         private readonly NumericUpDown _offset = Number(-1000, 1000, 2);
-        private readonly CheckBox _kmz = new CheckBox { Text = "Google Earth (.kmz)", AutoSize = true, Checked = true };
+        private readonly CheckBox _kmz = new CheckBox { Text = "Google Earth (.kmz, for Web and Pro)", AutoSize = true, Checked = true };
         private readonly CheckBox _geoJson = new CheckBox { Text = "GeoJSON footprints (.geojson)", AutoSize = true, Checked = true };
         private readonly CheckBox _webMap = new CheckBox { Text = "Live web map (.html)", AutoSize = true, Checked = true };
         private readonly CheckBox _save = new CheckBox { Text = "Save these coordinates to the Revit project location", AutoSize = true };

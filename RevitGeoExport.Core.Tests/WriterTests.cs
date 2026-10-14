@@ -191,4 +191,42 @@ public class KmlSizeTests
         Assert.Matches(@"-79\.\d{1,7},", text);
         Assert.DoesNotMatch(@"-79\.\d{8}", text);
     }
+
+    [Fact]
+    public void Slivers_and_collapsed_faces_are_not_written()
+    {
+        var mesh = new GeoMesh("1", "Panel", "Curtain Panels");
+        mesh.AddTriangle(new Vec3(0, 0, 0), new Vec3(5, 0, 0), new Vec3(10, 0, 0));          // a line: no area
+        mesh.AddTriangle(new Vec3(0, 0, 0), new Vec3(0.001, 0, 0), new Vec3(0, 0, 0.001));  // collapses at 1 cm precision
+        var sliverOnly = new GeoMesh("2", "Sliver", "Curtain Panels");
+        sliverOnly.AddTriangle(new Vec3(0, 0, 0), new Vec3(1, 0, 0), new Vec3(2, 0, 0));
+        mesh.AddTriangle(new Vec3(0, 0, 0), new Vec3(2, 0, 0), new Vec3(2, 0, 2));          // valid
+
+        using var stream = new MemoryStream();
+        KmlWriter.WriteKml(stream, Placement, new[] { mesh, sliverOnly }, new ExportOptions());
+        var doc = XDocument.Parse(Encoding.UTF8.GetString(stream.ToArray()));
+        XNamespace kml = "http://www.opengis.net/kml/2.2";
+
+        Assert.Single(doc.Descendants(kml + "Polygon"));
+        Assert.DoesNotContain(doc.Descendants(kml + "name"), n => n.Value == "Sliver");
+        Assert.Empty(doc.Descendants(kml + "MultiGeometry"));
+    }
+
+    [Fact]
+    public void Massing_writes_one_extruded_outline_per_element()
+    {
+        var mesh = new GeoMesh("1", "Tower", "Walls");
+        mesh.AddTriangle(new Vec3(0, 0, 0), new Vec3(10, 0, 0), new Vec3(10, 10, 30));
+        mesh.AddTriangle(new Vec3(0, 0, 0), new Vec3(10, 10, 30), new Vec3(0, 10, 30));
+
+        using var stream = new MemoryStream();
+        KmlWriter.WriteKml(stream, Placement, new[] { mesh }, new ExportOptions { KmlMode = KmlMode.Massing });
+        var doc = XDocument.Parse(Encoding.UTF8.GetString(stream.ToArray()));
+        XNamespace kml = "http://www.opengis.net/kml/2.2";
+
+        var polygon = Assert.Single(doc.Descendants(kml + "Polygon"));
+        Assert.Equal("1", polygon.Element(kml + "extrude")!.Value);
+        var heights = polygon.Descendants(kml + "coordinates").Single().Value.Split(' ').Select(c => c.Split(',')[2]).Distinct();
+        Assert.Equal("30", Assert.Single(heights));
+    }
 }

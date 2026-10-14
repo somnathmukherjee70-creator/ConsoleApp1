@@ -9,7 +9,8 @@ It adds a **Place on Map** button to the **Add-Ins** tab. Clicking it exports:
 
 | File | Open it with | What you get |
 | --- | --- | --- |
-| `<name>.kmz` | Google Earth Pro (double-click), or earth.google.com › Projects › Import KML file | The full 3D model (every triangle), coloured per category, in one folder per category |
+| `<name>_GoogleEarthWeb.kmz` | earth.google.com › Projects › Import KML file, or Google Earth mobile | A massing model: each element's outline extruded to its height. Earth Web only accepts simple shapes like these |
+| `<name>_GoogleEarthPro_3D.kmz` | Google Earth Pro (double-click) | The full 3D model, coloured per category, in one folder per category |
 | `<name>_map.html` | Any browser (double-click) | A live 3D map on satellite or street imagery. No server or API key needed |
 | `<name>.geojson` | MapLibre, Mapbox, Cesium, ArcGIS, QGIS, geojson.io | Element footprints with `base_height`/`height` for 3D extrusion |
 

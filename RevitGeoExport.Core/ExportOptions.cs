@@ -12,6 +12,15 @@ namespace RevitGeoExport.Core
         AboveSeaLevel,
     }
 
+    public enum KmlMode
+    {
+        /// <summary>Every face in 3D. Best in Google Earth Pro (desktop).</summary>
+        Detailed3D,
+
+        /// <summary>Each element's outline extruded to its height: simple shapes every Google Earth accepts, including Earth Web.</summary>
+        Massing,
+    }
+
     public sealed class ExportOptions
     {
         public string DocumentName { get; set; } = "Revit model";
@@ -23,6 +32,8 @@ namespace RevitGeoExport.Core
         /// browser) runs out of memory, so the smallest elements are left out. 0 means no limit.
         /// </summary>
         public int MaxKmlPoints { get; set; } = 300_000;
+
+        public KmlMode KmlMode { get; set; } = KmlMode.Detailed3D;
     }
 
     /// <summary>Resolves a mesh vertex height to the altitude written to the map.</summary>

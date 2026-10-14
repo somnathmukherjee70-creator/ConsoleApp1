@@ -57,7 +57,7 @@ namespace RevitGeoExport.Core
                     xml.WriteStartElement("Folder");
                     xml.WriteElementString("name", group.Key);
                     foreach (var mesh in group)
-                        WriteMeshPlacemark(xml, mesh, placement, altitude, altitudeMode);
+                        WriteMeshPlacemark(xml, mesh, placement, altitude, altitudeMode, options.KmlMode);
                     xml.WriteEndElement();
                 }
 
@@ -144,66 +144,134 @@ namespace RevitGeoExport.Core
             xml.WriteEndElement();
         }
 
-        private static void WriteMeshPlacemark(XmlWriter xml, GeoMesh mesh, IGeoPlacement placement, AltitudeResolver altitude, string altitudeMode)
+        private static void WriteMeshPlacemark(XmlWriter xml, GeoMesh mesh, IGeoPlacement placement, AltitudeResolver altitude,
+            string altitudeMode, KmlMode mode)
         {
             if (mesh.IsEmpty)
+                return;
+
+            // Build and validate every polygon first: Google Earth Web rejects the whole file after 100
+            // invalid ones, and an empty MultiGeometry is invalid too.
+            var polygons = mode == KmlMode.Massing
+                ? MassingPolygon(mesh, placement, altitude)
+                : DetailedPolygons(mesh, placement, altitude);
+            if (polygons.Count == 0)
                 return;
 
             xml.WriteStartElement("Placemark");
             xml.WriteElementString("name", mesh.Name);
             xml.WriteElementString("description", $"{mesh.Category} · Element ID {mesh.ElementId}");
             xml.WriteElementString("styleUrl", "#" + StyleId(mesh.Category));
-            xml.WriteStartElement("MultiGeometry");
+            if (polygons.Count > 1)
+                xml.WriteStartElement("MultiGeometry");
 
-            var ring = new StringBuilder();
+            foreach (var (outer, holes) in polygons)
+            {
+                xml.WriteStartElement("Polygon");
+                if (mode == KmlMode.Massing)
+                    xml.WriteElementString("extrude", "1");
+                xml.WriteElementString("altitudeMode", altitudeMode);
+                WriteRing(xml, "outerBoundaryIs", outer);
+                foreach (var hole in holes)
+                    WriteRing(xml, "innerBoundaryIs", hole);
+                xml.WriteEndElement();
+            }
+
+            if (polygons.Count > 1)
+                xml.WriteEndElement(); // MultiGeometry
+            xml.WriteEndElement(); // Placemark
+        }
+
+        private static List<(string Outer, List<string> Holes)> DetailedPolygons(GeoMesh mesh, IGeoPlacement placement, AltitudeResolver altitude)
+        {
+            var result = new List<(string, List<string>)>();
             var triangle = new List<Vec3>(3);
             for (int t = 0; t < mesh.TriangleCount; t++)
             {
                 triangle.Clear();
                 for (int corner = 0; corner < 3; corner++)
                     triangle.Add(mesh.Vertices[mesh.Indices[t * 3 + corner]]);
-                WritePolygon(xml, triangle, null, placement, altitude, altitudeMode, ring);
+                var outer = Ring(triangle, placement, altitude);
+                if (outer != null)
+                    result.Add((outer, new List<string>()));
             }
 
             foreach (var polygon in mesh.Polygons)
-                WritePolygon(xml, polygon.Outer, polygon.Holes, placement, altitude, altitudeMode, ring);
-
-            xml.WriteEndElement(); // MultiGeometry
-            xml.WriteEndElement(); // Placemark
-        }
-
-        private static void WritePolygon(XmlWriter xml, List<Vec3> outer, List<List<Vec3>>? holes, IGeoPlacement placement,
-            AltitudeResolver altitude, string altitudeMode, StringBuilder ring)
-        {
-            xml.WriteStartElement("Polygon");
-            xml.WriteElementString("altitudeMode", altitudeMode);
-            WriteRing(xml, "outerBoundaryIs", outer, placement, altitude, ring);
-            if (holes != null)
             {
-                foreach (var hole in holes)
-                    WriteRing(xml, "innerBoundaryIs", hole, placement, altitude, ring);
+                var outer = Ring(polygon.Outer, placement, altitude);
+                if (outer == null)
+                    continue;
+                var holes = polygon.Holes.Select(h => Ring(h, placement, altitude)).Where(h => h != null).Select(h => h!).ToList();
+                result.Add((outer, holes));
             }
 
-            xml.WriteEndElement();
+            return result;
         }
 
-        private static void WriteRing(XmlWriter xml, string boundary, List<Vec3> points, IGeoPlacement placement, AltitudeResolver altitude, StringBuilder ring)
+        /// <summary>The element's plan outline at its top height, extruded down to the ground.</summary>
+        private static List<(string Outer, List<string> Holes)> MassingPolygon(GeoMesh mesh, IGeoPlacement placement, AltitudeResolver altitude)
         {
-            ring.Clear();
-            for (int i = 0; i <= points.Count; i++)
+            double top = mesh.Vertices.Max(v => v.Z);
+            var hull = ConvexHull.Compute(mesh.Vertices.Select(v => (v.X, v.Y)));
+            var ring = Ring(hull.Select(p => new Vec3(p.X, p.Y, top)).ToList(), placement, altitude);
+            return ring == null
+                ? new List<(string, List<string>)>()
+                : new List<(string, List<string>)> { (ring, new List<string>()) };
+        }
+
+        /// <summary>Smallest face kept, in square metres; anything smaller is a sliver Google Earth rejects.</summary>
+        private const double MinFaceArea = 1e-4;
+
+        /// <summary>
+        /// Formats a closed ring, or returns null when it isn't a valid KML ring: fewer than three distinct
+        /// points once rounded to file precision, or no area (a sliver or a line).
+        /// </summary>
+        internal static string? Ring(List<Vec3> points, IGeoPlacement placement, AltitudeResolver altitude)
+        {
+            if (points.Count < 3 || Area(points) < MinFaceArea)
+                return null;
+
+            var formatted = new List<string>(points.Count + 1);
+            foreach (var v in points)
             {
-                // A KML ring repeats its first point to close it.
-                var v = points[i % points.Count];
                 var (lon, lat) = placement.ToLonLat(v.X, v.Y);
-                if (i > 0)
-                    ring.Append(' ');
                 // 7 decimals is about 1 cm; more only makes the file bigger.
-                ring.Append(Format(lon, 7)).Append(',').Append(Format(lat, 7)).Append(',').Append(Format(altitude.Resolve(v.Z), 2));
+                string point = Format(lon, 7) + "," + Format(lat, 7) + "," + Format(altitude.Resolve(v.Z), 2);
+                if (formatted.Count == 0 || formatted[formatted.Count - 1] != point)
+                    formatted.Add(point);
             }
 
+            if (formatted.Count > 1 && formatted[formatted.Count - 1] == formatted[0])
+                formatted.RemoveAt(formatted.Count - 1);
+            if (formatted.Distinct().Count() < 3)
+                return null;
+
+            // A KML ring repeats its first point to close it.
+            formatted.Add(formatted[0]);
+            return string.Join(" ", formatted);
+        }
+
+        /// <summary>Area of a planar ring in 3D (Newell's method), in square metres.</summary>
+        private static double Area(List<Vec3> ring)
+        {
+            double x = 0, y = 0, z = 0;
+            for (int i = 0; i < ring.Count; i++)
+            {
+                var a = ring[i];
+                var b = ring[(i + 1) % ring.Count];
+                x += (a.Y - b.Y) * (a.Z + b.Z);
+                y += (a.Z - b.Z) * (a.X + b.X);
+                z += (a.X - b.X) * (a.Y + b.Y);
+            }
+
+            return System.Math.Sqrt(x * x + y * y + z * z) / 2;
+        }
+
+        private static void WriteRing(XmlWriter xml, string boundary, string coordinates)
+        {
             xml.WriteStartElement(boundary);
             xml.WriteStartElement("LinearRing");
-            xml.WriteElementString("coordinates", ring.ToString());
+            xml.WriteElementString("coordinates", coordinates);
             xml.WriteEndElement();
             xml.WriteEndElement();
         }
