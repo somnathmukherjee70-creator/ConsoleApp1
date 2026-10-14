@@ -23,7 +23,7 @@ namespace RevitGeoExport
         // How close a UTM reading must land to the Revit site location to be trusted.
         private const double UtmMatchToleranceMeters = 50_000;
 
-        private RevitLocation(Transform toShared, XYZ surveyShared, XYZ projectBaseShared, SiteLocation site)
+        private RevitLocation(Transform toShared, XYZ surveyShared, XYZ projectBaseShared, SiteLocation site, XYZ modelCenterShared)
         {
             ToShared = toShared;
             SurveyPointShared = surveyShared;
@@ -32,7 +32,7 @@ namespace RevitGeoExport
             LongitudeDegrees = site.Longitude * 180 / Math.PI;
             ElevationMeters = site.Elevation * FeetToMeters;
             PlaceName = site.PlaceName;
-            DetectCoordinateSystem(site);
+            DetectCoordinateSystem(site, modelCenterShared);
         }
 
         /// <summary>Internal coordinates (feet) to shared coordinates (feet, Y = true north).</summary>
@@ -66,7 +66,7 @@ namespace RevitGeoExport
                 toShared = total;
             }
 
-            return new RevitLocation(toShared, survey.SharedPosition, projectBase.SharedPosition, doc.SiteLocation);
+            return new RevitLocation(toShared, survey.SharedPosition, projectBase.SharedPosition, doc.SiteLocation, ModelCenter(doc, toShared));
         }
 
         /// <summary>Builds a function from internal coordinates to shared coordinates in metres (eastings, northings, elevation).</summary>
@@ -80,42 +80,56 @@ namespace RevitGeoExport
             };
         }
 
-        private void DetectCoordinateSystem(SiteLocation site)
+        private void DetectCoordinateSystem(SiteLocation site, XYZ modelCenterShared)
         {
             // 1. A GIS coordinate system assigned in Revit (acquired from Civil 3D, a DWG or ACC).
             string id = site.GeoCoordinateSystemId;
+            string unsupported = null;
             if (!string.IsNullOrEmpty(id))
             {
                 if (ProjectedCrs.TryParse(id, out var crs) || ProjectedCrs.TryParse(site.GeoCoordinateSystemDefinition, out crs))
                 {
                     DetectedCrs = crs;
                     DetectionNote = $"Found in the Revit project: {id}.";
-                }
-                else
-                {
-                    DetectionNote = $"The project uses coordinate system \"{id}\", which isn't supported. Enter its EPSG code if it is UTM, or place it by latitude/longitude.";
+                    return;
                 }
 
-                return;
+                // Not one we can convert, but the shared coordinates may still match a supported grid.
+                unsupported = $"Revit's coordinate system \"{id}\" isn't supported. ";
             }
 
-            // 2. Shared coordinates that land near the Revit site location in a grid used there (UTM zones, local grids).
-            var shared = ProjectBasePointShared;
-            if (Math.Abs(shared.X) * FeetToMeters < RealCoordinateThresholdMeters && Math.Abs(shared.Y) * FeetToMeters < RealCoordinateThresholdMeters)
-                shared = ToShared.OfPoint(XYZ.Zero);
-            double east = shared.X * FeetToMeters, north = shared.Y * FeetToMeters;
-            if (Math.Abs(east) < RealCoordinateThresholdMeters && Math.Abs(north) < RealCoordinateThresholdMeters)
+            // 2. Shared coordinates that land near the Revit site location in a grid used there. Try the
+            //    project base point, the internal origin and the middle of the model, as any of them may
+            //    be the one carrying real coordinates.
+            XYZ sample = null;
+            foreach (var point in new[] { ProjectBasePointShared, ToShared.OfPoint(XYZ.Zero), modelCenterShared })
             {
-                DetectionNote = "No coordinate system found; the model is placed by latitude/longitude.";
-                return;
+                if (point == null || Math.Abs(point.X) * FeetToMeters < RealCoordinateThresholdMeters && Math.Abs(point.Y) * FeetToMeters < RealCoordinateThresholdMeters)
+                    continue;
+                sample = sample ?? point;
+
+                var match = BestMatch(point);
+                if (match != null)
+                {
+                    DetectedCrs = match;
+                    DetectionNote = $"Shared coordinates {Format(point)} match {match.Name} near {PlaceName}.";
+                    return;
+                }
             }
 
+            DetectionNote = unsupported + (sample == null
+                ? $"The shared coordinates are near 0,0 (project base point {Format(ProjectBasePointShared)}), so the model isn't in survey coordinates. Place it by latitude/longitude, or acquire coordinates in Revit first."
+                : $"The shared coordinates ({Format(sample)}) don't match a known grid within 50 km of the Revit location ({LatitudeDegrees:0.####}, {LongitudeDegrees:0.####}). Check Manage › Location, or enter the EPSG code.");
+        }
+
+        private ProjectedCrs BestMatch(XYZ shared)
+        {
             ProjectedCrs best = null;
             double bestDistance = UtmMatchToleranceMeters;
             foreach (var candidate in ProjectedCrs.CandidatesNear(LatitudeDegrees, LongitudeDegrees))
             {
                 // Through a placement, so feet-based grids read the Revit foot values correctly.
-                var (lon, lat) = new ProjectedPlacement(candidate).ToLonLat(east, north);
+                var (lon, lat) = new ProjectedPlacement(candidate).ToLonLat(shared.X * FeetToMeters, shared.Y * FeetToMeters);
                 double distance = DistanceMeters(lat, lon, LatitudeDegrees, LongitudeDegrees);
                 if (distance <= bestDistance)
                 {
@@ -124,17 +138,31 @@ namespace RevitGeoExport
                 }
             }
 
-            string coordinates = string.Format(System.Globalization.CultureInfo.InvariantCulture,
-                "E {0:N0}, N {1:N0} ft", shared.X, shared.Y);
-            if (best != null)
+            return best;
+        }
+
+        private static string Format(XYZ shared) =>
+            string.Format(System.Globalization.CultureInfo.InvariantCulture, "E {0:N0}, N {1:N0} ft", shared.X, shared.Y);
+
+        /// <summary>Centre of the model's elements in shared coordinates, or null for an empty model.</summary>
+        private static XYZ ModelCenter(Document doc, Transform toShared)
+        {
+            double x = 0, y = 0, z = 0;
+            int count = 0;
+            foreach (var element in new FilteredElementCollector(doc).WhereElementIsNotElementType().WhereElementIsViewIndependent())
             {
-                DetectedCrs = best;
-                DetectionNote = $"Shared coordinates {coordinates} match {best.Name} near {PlaceName}.";
+                if (element.Category?.CategoryType != CategoryType.Model)
+                    continue;
+                var box = element.get_BoundingBox(null);
+                if (box == null)
+                    continue;
+                var center = toShared.OfPoint((box.Min + box.Max) / 2);
+                x += center.X; y += center.Y; z += center.Z;
+                if (++count == 2000)
+                    break;
             }
-            else
-            {
-                DetectionNote = $"The shared coordinates ({coordinates}) look like real eastings/northings but don't match a known grid near the Revit location. Enter their EPSG code to place the model by them.";
-            }
+
+            return count == 0 ? null : new XYZ(x / count, y / count, z / count);
         }
 
         private static double DistanceMeters(double lat1, double lon1, double lat2, double lon2)

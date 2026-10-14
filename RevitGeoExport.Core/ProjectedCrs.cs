@@ -147,6 +147,15 @@ namespace RevitGeoExport.Core
                 return TryCreate(UtmEpsg(datum, zone, south), out crs);
             }
 
+            // Pennsylvania State Plane: Autodesk/CS-MAP codes (PA83-SF = South, US feet) and descriptive names.
+            var pa = Regex.Match(text, @"^PA83-([NS])(F)?$", RegexOptions.IgnoreCase);
+            if (pa.Success)
+                return TryCreate(PennsylvaniaEpsg(pa.Groups[1].Value.ToUpperInvariant() == "S", pa.Groups[2].Success), out crs);
+            var paName = Regex.Match(text, @"Pennsylvania\W*(South|North)", RegexOptions.IgnoreCase);
+            if (paName.Success && !Regex.IsMatch(text, @"EPSG\W{0,4}\d{4,6}", RegexOptions.IgnoreCase))
+                return TryCreate(PennsylvaniaEpsg(paName.Groups[1].Value.Equals("South", StringComparison.OrdinalIgnoreCase),
+                    Regex.IsMatch(text, @"ftUS|US\s*survey\s*f|feet|\bft\b", RegexOptions.IgnoreCase)), out crs);
+
             if (Regex.IsMatch(text, @"Dubai|DLTM", RegexOptions.IgnoreCase))
                 return TryCreate(3997, out crs);
 
@@ -297,6 +306,9 @@ namespace RevitGeoExport.Core
         private static double Atanh(double x) => 0.5 * Math.Log((1 + x) / (1 - x));
 
         public override string ToString() => $"EPSG:{Epsg} ({Name})";
+
+        private static int PennsylvaniaEpsg(bool south, bool usFeet) =>
+            south ? (usFeet ? 2272 : 32129) : (usFeet ? 2271 : 32128);
 
         private static int UtmEpsg(string datum, int zone, bool south)
         {

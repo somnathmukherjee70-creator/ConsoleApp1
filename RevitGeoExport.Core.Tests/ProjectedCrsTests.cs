@@ -43,6 +43,11 @@ public class ProjectedCrsTests
     [InlineData("GDA2020.UTM-56", 7856)]
     [InlineData("WGS84.PseudoMercator", 3857)]
     [InlineData("DubaiLocalTM", 3997)]
+    [InlineData("PA83-SF", 2272)]
+    [InlineData("PA83-NF", 2271)]
+    [InlineData("PA83-S", 32129)]
+    [InlineData("NAD83 / Pennsylvania South (ftUS)", 2272)]
+    [InlineData("NAD83 / Pennsylvania North", 32128)]
     [InlineData("3997", 3997)]
     [InlineData("PROJCS[\"WGS 84 / UTM zone 45N\",GEOGCS[\"WGS 84\",AUTHORITY[\"EPSG\",\"4326\"]],AUTHORITY[\"EPSG\",\"32645\"]]", 32645)]
     public void Parses_revit_and_epsg_names(string text, int epsg)
