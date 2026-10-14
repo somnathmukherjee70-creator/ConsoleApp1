@@ -722,8 +722,16 @@ const ifcValue = (v) => {
 
 // Open .ifc files. With append, they join the current model; the sample is always replaced.
 async function openIfcFiles(list, append) {
-  list = [...list].filter((f) => /\.ifc$/i.test(f.name));
-  if (!list.length) return toast('Choose files with the .ifc extension.', true);
+  const all = [...list];
+  list = all.filter((f) => /\.ifc$/i.test(f.name));
+  const skipped = all.filter((f) => !/\.ifc$/i.test(f.name));
+  if (skipped.length) {
+    const autodesk = skipped.some((f) => /\.(rvt|rfa|nwd|nwc|nwf)$/i.test(f.name));
+    toast(autodesk
+      ? 'Sightline opens IFC files only. Export IFC from Revit (File → Export → IFC) or from the program that made the Navisworks model, then open that.'
+      : `Sightline opens IFC files only. Skipped: ${skipped.map((f) => f.name).join(', ')}.`, true);
+  }
+  if (!list.length) return;
   if (!M || M.files.every((f) => f.sample || f.removed)) append = false;
   let opened = 0;
   for (const f of list) {
