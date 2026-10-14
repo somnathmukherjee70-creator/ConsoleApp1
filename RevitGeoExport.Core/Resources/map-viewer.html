@@ -35,7 +35,13 @@
         <option value="streets">Streets</option>
       </select>
     </label>
-    <label>Model opacity <input id="opacity" type="range" min="0.1" max="1" step="0.05" value="0.9"></label>
+    <label id="view-row" hidden>Show
+      <select id="view">
+        <option value="model">Real 3D model</option>
+        <option value="blocks">Simple blocks</option>
+      </select>
+    </label>
+    <label>Block opacity <input id="opacity" type="range" min="0.1" max="1" step="0.05" value="0.9"></label>
     <div class="hint">Right-drag or Ctrl-drag to tilt/rotate. Click an element for details. Drop another exported .geojson file here to load it.</div>
   </div>
   <div id="drop">Drop a .geojson file</div>
@@ -43,6 +49,9 @@
   <script>
     // Filled in by the Revit exporter. Leave as null to start empty and use drag & drop.
     const MODEL = /*__MODEL_GEOJSON__*/null;
+    // The full 3D model as base64 GLB, and the longitude/latitude of its origin.
+    const MODEL_GLB = /*__MODEL_GLB__*/null;
+    const MODEL_ORIGIN = /*__MODEL_ORIGIN__*/null;
 
     const map = new maplibregl.Map({
       container: 'map',
@@ -86,7 +95,7 @@
           'fill-extrusion-color': ['get', 'color'],
           'fill-extrusion-base': ['get', 'base_height'],
           'fill-extrusion-height': ['get', 'height'],
-          'fill-extrusion-opacity': Number(document.getElementById('opacity').value)
+          'fill-extrusion-opacity': blockOpacity()
         }
       });
 
@@ -104,7 +113,9 @@
     }
 
     // style.load rather than load: 'load' waits for imagery tiles, so the model would never appear offline.
-    map.once('style.load', () => { if (MODEL) loadModel(MODEL); });
+    // styleReady lets the 3D model script below know whether this already happened.
+    let styleReady = false;
+    map.once('style.load', () => { styleReady = true; if (MODEL) loadModel(MODEL); });
 
     map.on('click', 'model', e => {
       const p = e.features[0].properties;
@@ -121,9 +132,18 @@
       map.setLayoutProperty('satellite', 'visibility', satellite ? 'visible' : 'none');
       map.setLayoutProperty('streets', 'visibility', satellite ? 'none' : 'visible');
     });
-    document.getElementById('opacity').addEventListener('input', e => {
-      if (map.getLayer('model')) map.setPaintProperty('model', 'fill-extrusion-opacity', Number(e.target.value));
-    });
+    // With the real 3D model showing, the blocks stay invisible but still answer clicks.
+    function blockOpacity() {
+      const showModel = map.getLayer('model-3d') && document.getElementById('view').value === 'model';
+      return showModel ? 0 : Number(document.getElementById('opacity').value);
+    }
+    function refreshView() {
+      if (map.getLayer('model')) map.setPaintProperty('model', 'fill-extrusion-opacity', blockOpacity());
+      if (map.getLayer('model-3d'))
+        map.setLayoutProperty('model-3d', 'visibility', document.getElementById('view').value === 'model' ? 'visible' : 'none');
+    }
+    document.getElementById('opacity').addEventListener('input', refreshView);
+    document.getElementById('view').addEventListener('change', refreshView);
 
     const drop = document.getElementById('drop');
     window.addEventListener('dragover', e => { e.preventDefault(); drop.style.display = 'flex'; });
@@ -136,6 +156,59 @@
       try { loadModel(JSON.parse(await file.text())); }
       catch (err) { alert('Could not read ' + file.name + ': ' + err.message); }
     });
+  </script>
+  <script type="importmap">
+    { "imports": { "three": "https://unpkg.com/three@0.169.0/build/three.module.js",
+                   "three/addons/": "https://unpkg.com/three@0.169.0/examples/jsm/" } }
+  </script>
+  <script type="module">
+    // Shows the embedded GLB at its real position, drawn by three.js inside the map (MapLibre custom layer).
+    import * as THREE from 'three';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+    if (MODEL_GLB && MODEL_ORIGIN) {
+      const bytes = Uint8Array.from(atob(MODEL_GLB), c => c.charCodeAt(0));
+      new GLTFLoader().parse(bytes.buffer, '', gltf => {
+        const origin = maplibregl.MercatorCoordinate.fromLngLat(MODEL_ORIGIN, 0);
+        const scale = origin.meterInMercatorCoordinateUnits();
+        // glTF is +Y up, -Z north; Mercator is +Z up, +Y south.
+        const toMap = new THREE.Matrix4()
+          .makeTranslation(origin.x, origin.y, origin.z)
+          .scale(new THREE.Vector3(scale, -scale, scale))
+          .multiply(new THREE.Matrix4().makeRotationX(Math.PI / 2));
+
+        const layer = {
+          id: 'model-3d',
+          type: 'custom',
+          renderingMode: '3d',
+          onAdd(map, gl) {
+            this.camera = new THREE.Camera();
+            this.scene = new THREE.Scene();
+            this.scene.add(new THREE.HemisphereLight(0xffffff, 0x8a8f99, 2.2));
+            const sun = new THREE.DirectionalLight(0xffffff, 1.6);
+            sun.position.set(0.5, 1, 0.8);
+            this.scene.add(sun);
+            this.scene.add(gltf.scene);
+            this.renderer = new THREE.WebGLRenderer({ canvas: map.getCanvas(), context: gl, antialias: true });
+            this.renderer.autoClear = false;
+          },
+          render(gl, matrix) {
+            this.camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix).multiply(toMap);
+            this.renderer.resetState();
+            this.renderer.render(this.scene, this.camera);
+          }
+        };
+
+        const add = () => {
+          map.addLayer(layer);
+          document.getElementById('view-row').hidden = false;
+          refreshView();
+          map.triggerRepaint();
+        };
+        // isStyleLoaded() stays false while imagery loads, so rely on the page's own flag.
+        if (styleReady) add(); else map.once('style.load', add);
+      }, err => console.error('Could not read the 3D model', err));
+    }
   </script>
 </body>
 </html>

@@ -156,7 +156,8 @@ namespace RevitGeoExport
                 dialog.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, "Open the 3D model in Google Earth Pro",
                     "For earth.google.com, import the " + WebKmzSuffix + " file instead (Projects › Import KML file).");
             if (html != null)
-                dialog.AddCommandLink(TaskDialogCommandLinkId.CommandLink2, "Open the live web map", "Satellite and street map in your browser.");
+                dialog.AddCommandLink(TaskDialogCommandLinkId.CommandLink2, "Open the 3D map (places itself)",
+                    "The real 3D model on satellite imagery in your browser; nothing to set up.");
             dialog.AddCommandLink(TaskDialogCommandLinkId.CommandLink3, "Open the export folder");
             if (glb != null)
                 dialog.AddCommandLink(TaskDialogCommandLinkId.CommandLink4, "Copy the 3D model's coordinates",

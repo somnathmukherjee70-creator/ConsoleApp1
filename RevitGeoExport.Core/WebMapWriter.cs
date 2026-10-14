@@ -12,12 +12,27 @@ namespace RevitGeoExport.Core
     public static class WebMapWriter
     {
         private const string Placeholder = "/*__MODEL_GEOJSON__*/null";
+        private const string GlbPlaceholder = "/*__MODEL_GLB__*/null";
+        private const string OriginPlaceholder = "/*__MODEL_ORIGIN__*/null";
 
-        public static string ToHtml(IGeoPlacement placement, IReadOnlyCollection<GeoMesh> meshes, ExportOptions options)
+        /// <param name="includeModel">Embed the full 3D model (GLB) so the page shows the real architecture, not just blocks.</param>
+        public static string ToHtml(IGeoPlacement placement, IReadOnlyCollection<GeoMesh> meshes, ExportOptions options, bool includeModel = true)
         {
-            string template = LoadTemplate();
-            return template
+            string glb = "null", origin = "null";
+            if (includeModel)
+            {
+                using (var stream = new MemoryStream())
+                {
+                    var result = GlbWriter.Write(stream, placement, meshes, options);
+                    glb = "\"" + System.Convert.ToBase64String(stream.ToArray()) + "\"";
+                    origin = "[" + KmlWriter.Format(result.Longitude) + "," + KmlWriter.Format(result.Latitude) + "]";
+                }
+            }
+
+            return LoadTemplate()
                 .Replace("__MODEL_TITLE__", System.Net.WebUtility.HtmlEncode(options.DocumentName))
+                .Replace(GlbPlaceholder, glb)
+                .Replace(OriginPlaceholder, origin)
                 .Replace(Placeholder, GeoJsonWriter.ToGeoJson(placement, meshes, options));
         }
 
