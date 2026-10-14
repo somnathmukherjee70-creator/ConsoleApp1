@@ -1,3 +1,5 @@
+<img src="docs/logo.png" alt="" width="96" align="right">
+
 # Revit Geo Export
 
 A Revit add-in that places your Revit model at its exact real-world position on

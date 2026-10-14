@@ -47,6 +47,8 @@ namespace RevitGeoExport
         public ExportDialog(RevitLocation location, string defaultOutput)
         {
             Text = "Place model on map";
+            using (var icon = App.OpenResource("logo.ico"))
+                Icon = new System.Drawing.Icon(icon);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = MinimizeBox = false;
             StartPosition = FormStartPosition.CenterScreen;
