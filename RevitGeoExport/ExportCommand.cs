@@ -158,12 +158,20 @@ namespace RevitGeoExport
             if (html != null)
                 dialog.AddCommandLink(TaskDialogCommandLinkId.CommandLink2, "Open the live web map", "Satellite and street map in your browser.");
             dialog.AddCommandLink(TaskDialogCommandLinkId.CommandLink3, "Open the export folder");
+            if (glb != null)
+                dialog.AddCommandLink(TaskDialogCommandLinkId.CommandLink4, "Copy the 3D model's coordinates",
+                    "Paste into Google Earth Web's 3D model position fields after importing the .glb.");
 
             switch (dialog.Show())
             {
                 case TaskDialogResult.CommandLink1: Open(kmz); break;
                 case TaskDialogResult.CommandLink2: Open(html); break;
                 case TaskDialogResult.CommandLink3: Open(Path.GetDirectoryName(written[0])); break;
+                case TaskDialogResult.CommandLink4:
+                    System.Windows.Forms.Clipboard.SetText(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                        "{0:0.0000000}, {1:0.0000000}", glb.Latitude, glb.Longitude));
+                    TaskDialog.Show("Place model on map", "Copied. In Google Earth Web, import the .glb, then paste into its latitude/longitude fields.");
+                    break;
             }
         }
 

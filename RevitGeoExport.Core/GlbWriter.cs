@@ -78,7 +78,7 @@ namespace RevitGeoExport.Core
                 }
             }
 
-            WriteGlb(stream, categories.Where(c => c.Value.Count > 0).ToList(), options.DocumentName);
+            WriteGlb(stream, categories.Where(c => c.Value.Count > 0).ToList(), options.DocumentName, lat0, lon0);
             return new GlbResult(lat0, lon0, triangles, meshes.Count, all.Count - meshes.Count);
 
             float[] ToModel(Vec3 v)
@@ -105,11 +105,17 @@ namespace RevitGeoExport.Core
             return (float)Math.Sqrt(x * x + y * y + z * z) / 2;
         }
 
-        private static void WriteGlb(Stream stream, List<KeyValuePair<string, List<float>>> categories, string name)
+        private static void WriteGlb(Stream stream, List<KeyValuePair<string, List<float>>> categories, string name, double latitude, double longitude)
         {
             var bin = new MemoryStream();
             var json = new StringBuilder();
-            json.Append("{\"asset\":{\"version\":\"2.0\",\"generator\":\"Revit Geo Export\"},\"scene\":0,");
+            // glTF has no standard place for a geographic location; record it in the asset's extras
+            // so tools (and people) can find where the model's origin belongs.
+            json.Append("{\"asset\":{\"version\":\"2.0\",\"generator\":\"Revit Geo Export\",\"extras\":{")
+                .Append("\"latitude\":").Append(latitude.ToString("0.0000000", CultureInfo.InvariantCulture))
+                .Append(",\"longitude\":").Append(longitude.ToString("0.0000000", CultureInfo.InvariantCulture))
+                .Append(",\"altitude\":0,\"altitudeReference\":\"relativeToGround\",\"heading\":0")
+                .Append(",\"axes\":\"+X east, +Y up, -Z north, metres\"}},\"scene\":0,");
             json.Append("\"scenes\":[{\"name\":").Append(GeoJsonWriter.Quote(name)).Append(",\"nodes\":[")
                 .Append(string.Join(",", Enumerable.Range(0, categories.Count))).Append("]}],");
 

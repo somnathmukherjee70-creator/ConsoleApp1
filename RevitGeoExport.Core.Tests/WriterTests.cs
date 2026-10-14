@@ -268,6 +268,9 @@ public class GlbWriterTests
         Assert.Equal(3, result.Triangles);
 
         var root = json.RootElement;
+        var location = root.GetProperty("asset").GetProperty("extras");
+        Assert.Equal(22.544808, location.GetProperty("latitude").GetDouble(), 6);
+        Assert.Equal(88.342558, location.GetProperty("longitude").GetDouble(), 6);
         Assert.Equal(2, root.GetProperty("meshes").GetArrayLength());
         var wallAccessor = root.GetProperty("accessors")[0]; // categories sorted: Walls, Windows
         Assert.Equal(6, wallAccessor.GetProperty("count").GetInt32());
