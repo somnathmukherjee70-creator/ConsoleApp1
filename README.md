@@ -9,9 +9,8 @@ It adds a **Place on Map** button to the **Add-Ins** tab. Clicking it exports:
 
 | File | Open it with | What you get |
 | --- | --- | --- |
-| `<name>_GoogleEarthWeb_3D.glb` | earth.google.com › New project › Import › 3D model, then type the latitude/longitude from `<name>_GoogleEarthWeb_3D_placement.txt` | **The real architecture in Earth Web**: the full 3D model, coloured per category, turned to true north. Earth Web's 3D model import is marked experimental by Google |
-| `<name>_GoogleEarthWeb.kmz` | earth.google.com › Projects › Import KML file, or Google Earth mobile | A massing model: each element's outline extruded to its height. Earth Web only accepts simple shapes like these |
-| `<name>_GoogleEarthPro_3D.kmz` | Google Earth Pro (double-click) | The full 3D model, coloured per category, in one folder per category |
+| `<name>_GoogleEarthPro_3D.kmz` | **Google Earth Pro** (double-click) | **The real architecture, placed automatically**: the full 3D model (COLLADA) with its location, coloured per category |
+| `<name>_GoogleEarthWeb_3D.glb` | earth.google.com › New project › Import › 3D model, then enter the latitude/longitude from `<name>_GoogleEarthWeb_3D_placement.txt` (or *Copy coordinates* in Revit) | The same 3D model for Earth Web, which always asks where to put 3D models. Google marks this import as experimental |
 | `<name>_map.html` | Any browser (double-click) | **The real 3D model, already in place** on satellite or street imagery. Nothing to type or set up; no server or API key. Switch to *Simple blocks* if a very large model is slow |
 | `<name>.geojson` | MapLibre, Mapbox, Cesium, ArcGIS, QGIS, geojson.io | Element footprints with `base_height`/`height` for 3D extrusion |
 

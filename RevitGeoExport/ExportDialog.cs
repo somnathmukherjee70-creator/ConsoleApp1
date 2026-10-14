@@ -44,7 +44,7 @@ namespace RevitGeoExport
         private readonly NumericUpDown _elevation = Number(-500, 9000, 2);
         private readonly NumericUpDown _offset = Number(-1000, 1000, 2);
         private readonly CheckBox _glb = new CheckBox { Text = "Google Earth Web 3D model (.glb, real architecture)", AutoSize = true, Checked = true };
-        private readonly CheckBox _kmz = new CheckBox { Text = "Google Earth (.kmz, for Web and Pro)", AutoSize = true, Checked = true };
+        private readonly CheckBox _kmz = new CheckBox { Text = "Google Earth Pro 3D model that places itself (.kmz)", AutoSize = true, Checked = true };
         private readonly CheckBox _geoJson = new CheckBox { Text = "GeoJSON footprints (.geojson)", AutoSize = true, Checked = true };
         private readonly CheckBox _webMap = new CheckBox { Text = "3D map that places itself (.html)", AutoSize = true, Checked = true };
         private readonly CheckBox _save = new CheckBox { Text = "Save these coordinates to the Revit project location", AutoSize = true };

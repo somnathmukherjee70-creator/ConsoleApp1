@@ -287,3 +287,37 @@ public class GlbWriterTests
         Assert.Equal("BLEND", root.GetProperty("materials")[1].GetProperty("alphaMode").GetString());
     }
 }
+
+public class ColladaKmzWriterTests
+{
+    [Fact]
+    public void Kmz_places_a_collada_model_at_the_building_and_splits_big_meshes()
+    {
+        double e = 638053.3884, n = 2493751.7931;
+        var wall = new GeoMesh("1", "Wall", "Walls");
+        // More triangles than Google Earth allows in one mesh, to force a split.
+        for (int i = 0; i < 22000; i++)
+            wall.AddTriangle(new Vec3(e + i * 0.001, n, 0), new Vec3(e + i * 0.001 + 1, n, 0), new Vec3(e + i * 0.001, n, 3));
+
+        using var stream = new MemoryStream();
+        var result = ColladaKmzWriter.Write(stream, new ProjectedPlacement(ProjectedCrs.Utm(45, false)), new[] { wall }, new ExportOptions());
+        Assert.Equal(22000, result.Triangles);
+
+        using var zip = new System.IO.Compression.ZipArchive(new MemoryStream(stream.ToArray()));
+        Assert.Equal(new[] { "doc.kml", "models/model.dae" }, zip.Entries.Select(x => x.FullName).ToArray());
+
+        XNamespace kml = "http://www.opengis.net/kml/2.2";
+        var doc = XDocument.Load(zip.GetEntry("doc.kml")!.Open());
+        var location = doc.Descendants(kml + "Model").Single().Element(kml + "Location")!;
+        Assert.Equal(22.5448, double.Parse(location.Element(kml + "latitude")!.Value, System.Globalization.CultureInfo.InvariantCulture), 3);
+        Assert.Equal("models/model.dae", doc.Descendants(kml + "href").Single().Value);
+
+        XNamespace dae = "http://www.collada.org/2005/11/COLLADASchema";
+        var model = XDocument.Load(zip.GetEntry("models/model.dae")!.Open());
+        Assert.Equal("Z_UP", model.Descendants(dae + "up_axis").Single().Value);
+        var counts = model.Descendants(dae + "triangles").Select(t => int.Parse(t.Attribute("count")!.Value)).ToList();
+        Assert.Equal(new[] { 21845, 155 }, counts);
+        Assert.All(counts, c => Assert.True(c <= ColladaKmzWriter.MaxTrianglesPerMesh));
+        Assert.Equal("1", model.Descendants(dae + "double_sided").First().Value);
+    }
+}

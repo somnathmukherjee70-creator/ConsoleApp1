@@ -67,7 +67,7 @@ namespace RevitGeoExport
             };
 
             var written = new List<string>();
-            KmlResult kml = null;
+            GlbResult earthModel = null;
             GlbResult glb = null;
             try
             {
@@ -83,11 +83,9 @@ namespace RevitGeoExport
 
                 if (settings.WriteKmz)
                 {
-                    // Earth Web only accepts simple shapes, so it gets a massing model; Earth Pro gets full 3D.
-                    written.Add(Write(settings.OutputBasePath + WebKmzSuffix,
-                        p => KmlWriter.WriteKmz(p, placement, meshes, WithMode(options, KmlMode.Massing))));
+                    // The real 3D model (COLLADA) with its location: Google Earth Pro opens it in place.
                     written.Add(Write(settings.OutputBasePath + ProKmzSuffix,
-                        p => kml = KmlWriter.WriteKmz(p, placement, meshes, WithMode(options, KmlMode.Detailed3D))));
+                        p => earthModel = ColladaKmzWriter.Write(p, placement, meshes, options)));
                 }
                 if (settings.WriteGeoJson)
                     written.Add(Write(settings.OutputBasePath + ".geojson", p => GeoJsonWriter.Write(p, placement, meshes, options)));
@@ -100,22 +98,12 @@ namespace RevitGeoExport
                 return Result.Failed;
             }
 
-            ShowResult(meshes, view, placement, kml, glb, written);
+            ShowResult(meshes, view, placement, earthModel ?? glb, glb, written);
             return Result.Succeeded;
         }
 
         private const string GlbSuffix = "_GoogleEarthWeb_3D.glb";
-        private const string WebKmzSuffix = "_GoogleEarthWeb.kmz";
         private const string ProKmzSuffix = "_GoogleEarthPro_3D.kmz";
-
-        private static ExportOptions WithMode(ExportOptions options, KmlMode mode) => new ExportOptions
-        {
-            DocumentName = options.DocumentName,
-            AltitudeMode = options.AltitudeMode,
-            GroundOffsetMeters = options.GroundOffsetMeters,
-            MaxKmlPoints = options.MaxKmlPoints,
-            KmlMode = mode,
-        };
 
         private static string Write(string path, Action<string> write)
         {
@@ -134,10 +122,10 @@ namespace RevitGeoExport
             }
         }
 
-        private static void ShowResult(List<GeoMesh> meshes, View3D view, IGeoPlacement placement, KmlResult kml, GlbResult glb, List<string> written)
+        private static void ShowResult(List<GeoMesh> meshes, View3D view, IGeoPlacement placement, GlbResult earthModel, GlbResult glb, List<string> written)
         {
-            string trimmed = kml != null && kml.Omitted > 0
-                ? $"The 3D KMZ leaves out the {kml.Omitted:N0} smallest elements so Google Earth can open it; the web map has them all.\n"
+            string trimmed = earthModel != null && earthModel.Omitted > 0
+                ? $"The 3D model leaves out the {earthModel.Omitted:N0} smallest elements to stay a manageable size.\n"
                 : "";
             string model = glb == null ? "" : glb.Instructions(Path.GetFileName(written.First(p => p.EndsWith(GlbSuffix, StringComparison.OrdinalIgnoreCase)))) + "\n\n";
             var dialog = new TaskDialog("Place model on map")
@@ -153,8 +141,8 @@ namespace RevitGeoExport
             var kmz = written.FirstOrDefault(p => p.EndsWith(ProKmzSuffix, StringComparison.OrdinalIgnoreCase));
             var html = written.FirstOrDefault(p => p.EndsWith(".html", StringComparison.OrdinalIgnoreCase));
             if (kmz != null)
-                dialog.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, "Open the 3D model in Google Earth Pro",
-                    "For earth.google.com, import the " + WebKmzSuffix + " file instead (Projects › Import KML file).");
+                dialog.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, "Open in Google Earth Pro (places itself)",
+                    "The full 3D architecture, already in position. For earth.google.com use the .glb instead.");
             if (html != null)
                 dialog.AddCommandLink(TaskDialogCommandLinkId.CommandLink2, "Open the 3D map (places itself)",
                     "The real 3D model on satellite imagery in your browser; nothing to set up.");

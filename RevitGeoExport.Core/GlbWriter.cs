@@ -10,8 +10,9 @@ namespace RevitGeoExport.Core
     /// <summary>Where to place an exported GLB model, as Google Earth's import asks for it.</summary>
     public sealed class GlbResult
     {
-        public GlbResult(double latitude, double longitude, int triangles, int written, int omitted)
+        public GlbResult(double latitude, double longitude, int triangles, int written, int omitted, double baseAltitude = 0)
         {
+            BaseAltitude = baseAltitude;
             Latitude = latitude;
             Longitude = longitude;
             Triangles = triangles;
@@ -25,6 +26,9 @@ namespace RevitGeoExport.Core
         public int Triangles { get; }
         public int Written { get; }
         public int Omitted { get; }
+
+        /// <summary>Altitude of the model's lowest point: 0 when sitting on the terrain, else metres above sea level.</summary>
+        public double BaseAltitude { get; }
 
         public string Instructions(string fileName) => string.Format(CultureInfo.InvariantCulture,
             "Google Earth Web: New project › Import › 3D model (.glb) › {0}{1}" +
@@ -50,13 +54,24 @@ namespace RevitGeoExport.Core
 
         public static GlbResult Write(Stream stream, IGeoPlacement placement, IReadOnlyCollection<GeoMesh> all, ExportOptions options)
         {
+            var model = Build(placement, all, options);
+            WriteGlb(stream, model.Categories, options.DocumentName, model.Result.Latitude, model.Result.Longitude);
+            return model.Result;
+        }
+
+        /// <summary>
+        /// Triangles per category in model space (glTF axes: +X east, +Y up, -Z north, metres around the
+        /// plan centre, lowest point at 0), three vertices per triangle so faces shade flat.
+        /// </summary>
+        internal static (List<KeyValuePair<string, List<float>>> Categories, GlbResult Result) Build(
+            IGeoPlacement placement, IReadOnlyCollection<GeoMesh> all, ExportOptions options)
+        {
             var meshes = KmlWriter.WithinBudget(all, options.MaxModelTriangles, m => m.ModelTriangleCount);
             var altitude = new AltitudeResolver(options, placement, meshes);
             var (lon0, lat0) = placement.Center(meshes);
             var frame = new TangentFrame(lon0, lat0);
             double ground = meshes.Count == 0 ? 0 : meshes.SelectMany(m => m.Vertices).Min(v => altitude.Resolve(v.Z));
 
-            // Positions per category, three vertices per triangle (not shared, so viewers shade faces flat).
             var categories = new SortedDictionary<string, List<float>>(StringComparer.Ordinal);
             int triangles = 0;
             foreach (var mesh in meshes)
@@ -78,8 +93,8 @@ namespace RevitGeoExport.Core
                 }
             }
 
-            WriteGlb(stream, categories.Where(c => c.Value.Count > 0).ToList(), options.DocumentName, lat0, lon0);
-            return new GlbResult(lat0, lon0, triangles, meshes.Count, all.Count - meshes.Count);
+            return (categories.Where(c => c.Value.Count > 0).ToList(),
+                new GlbResult(lat0, lon0, triangles, meshes.Count, all.Count - meshes.Count, ground));
 
             float[] ToModel(Vec3 v)
             {
@@ -88,6 +103,8 @@ namespace RevitGeoExport.Core
                 return new[] { (float)east, (float)(altitude.Resolve(v.Z) - ground), (float)-north };
             }
         }
+
+        internal static string Num(float value) => value.ToString("R", CultureInfo.InvariantCulture);
 
         private static IEnumerable<(Vec3, Vec3, Vec3)> Triangles(GeoMesh mesh)
         {
@@ -202,7 +219,6 @@ namespace RevitGeoExport.Core
             return result;
         }
 
-        private static string Num(float value) => value.ToString("R", CultureInfo.InvariantCulture);
 
         /// <summary>East/north metres around a point, using the WGS84 radii there (millimetre-accurate at building scale).</summary>
         private sealed class TangentFrame
