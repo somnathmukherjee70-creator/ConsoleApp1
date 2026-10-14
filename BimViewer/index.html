@@ -1,0 +1,1257 @@
+<title>Sightline BIM Viewer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a drawing-sheet workspace. Model tree | framed 3D viewport with title block | properties. */
+:root {
+  --ground: #e4e8e2;     /* 3D scene background */
+  --panel: #f6f7f3;
+  --panel-2: #eceee8;
+  --ink: #1b221f;
+  --ink-2: #57615b;
+  --line: #ccd3ca;
+  --accent: #2b53c2;     /* drafting cobalt */
+  --accent-soft: #dfe6f8;
+  --select: #d98e1f;     /* selection amber */
+  --danger: #b2402f;
+  --grid-a: #b9c1b6;
+  --grid-b: #d2d8cf;
+  --font-display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --r: 6px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground: #131816; --panel: #1b211e; --panel-2: #232a26; --ink: #e2e7e1; --ink-2: #97a39b;
+    --line: #333d37; --accent: #86a2f4; --accent-soft: #24304f; --select: #f0ad45; --danger: #e8735f;
+    --grid-a: #2f3833; --grid-b: #222925; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --ground: #131816; --panel: #1b211e; --panel-2: #232a26; --ink: #e2e7e1; --ink-2: #97a39b;
+  --line: #333d37; --accent: #86a2f4; --accent-soft: #24304f; --select: #f0ad45; --danger: #e8735f;
+  --grid-a: #2f3833; --grid-b: #222925; color-scheme: dark;
+}
+
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  background: var(--panel); color: var(--ink); font-family: var(--font-body); font-size: 13px;
+  display: flex; flex-direction: column; overflow: hidden;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0;
+}
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* top bar */
+.bar { display: flex; align-items: center; gap: 12px; padding-block: 10px; flex-wrap: wrap; }
+.brand { display: flex; align-items: baseline; gap: 10px; margin-right: auto; min-width: 0; }
+.brand h1 { font-family: var(--font-display); font-weight: 600; font-size: 22px; letter-spacing: .02em; margin: 0; text-transform: uppercase; }
+.brand .model-name { color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.tools { display: flex; gap: 6px; flex-wrap: wrap; }
+.btn {
+  display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 11px; border-radius: var(--r);
+  border: 1px solid var(--line); background: var(--panel); cursor: pointer; white-space: nowrap;
+}
+.btn:hover { border-color: var(--ink-2); }
+.btn[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--panel); }
+.btn.small { height: 26px; padding: 0 8px; font-size: 12px; }
+.btn svg { width: 15px; height: 15px; flex: none; }
+.only-narrow { display: none; }
+
+/* workspace */
+.work { flex: 1; min-height: 0; display: grid; grid-template-columns: 270px minmax(0, 1fr) 320px; gap: 12px; position: relative; }
+.panel { display: flex; flex-direction: column; min-height: 0; min-width: 0; background: var(--panel); }
+.panel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-bottom: 8px; }
+.eyebrow { font-family: var(--font-display); font-weight: 600; font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); margin: 0; }
+.scroll { overflow: auto; min-height: 0; flex: 1; padding-right: 2px; }
+
+/* tree */
+.search { width: 100%; height: 30px; border: 1px solid var(--line); border-radius: var(--r); background: var(--panel-2); padding: 0 10px; margin-bottom: 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
+.chip { font-family: var(--font-mono); font-size: 11px; border: 1px solid var(--line); background: var(--panel-2); border-radius: 999px; padding: 2px 8px; cursor: pointer; display: inline-flex; gap: 5px; align-items: center; }
+.chip .sw { width: 8px; height: 8px; border-radius: 2px; }
+.chip[aria-pressed="false"] { opacity: .45; text-decoration: line-through; }
+details.grp > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 6px; padding: 4px 4px; border-radius: 4px; }
+details.grp > summary::-webkit-details-marker { display: none; }
+details.grp > summary::before { content: ""; width: 0; height: 0; border-left: 5px solid var(--ink-2); border-top: 4px solid transparent; border-bottom: 4px solid transparent; transition: transform .12s; flex: none; }
+details.grp[open] > summary::before { transform: rotate(90deg); }
+details.grp > summary:hover { background: var(--panel-2); }
+.storey-sum { font-weight: 600; }
+.cls-sum { font-family: var(--font-mono); font-size: 12px; color: var(--ink-2); }
+.count { margin-left: auto; font-family: var(--font-mono); font-size: 11px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.grp .grp { margin-left: 12px; }
+.el-list { margin-left: 22px; display: flex; flex-direction: column; }
+.el-row { display: flex; align-items: center; gap: 6px; border: 0; background: none; text-align: left; padding: 3px 6px; border-radius: 4px; cursor: pointer; min-width: 0; }
+.el-row:hover { background: var(--panel-2); }
+.el-row.sel { background: var(--accent-soft); color: var(--accent); }
+.el-row .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
+.el-row.off .nm, summary.off > span { opacity: .45; }
+.eye { border: 0; background: none; width: 22px; height: 22px; display: inline-grid; place-items: center; border-radius: 4px; cursor: pointer; color: var(--ink-2); flex: none; padding: 0; }
+.eye:hover { background: var(--line); color: var(--ink); }
+.eye svg { width: 14px; height: 14px; }
+
+/* stage */
+.stage { position: relative; min-height: 0; min-width: 0; border: 1px solid var(--line); border-radius: 2px; background: var(--ground); overflow: hidden; touch-action: none; }
+.stage canvas { display: block; }
+.stage.measuring canvas { cursor: crosshair; }
+.labels { position: absolute; inset: 0; pointer-events: none; }
+.room-tag { font-size: 11px; line-height: 1.25; text-align: center; color: #1b221f; background: rgb(255 255 255 / .82); padding: 3px 6px; border-radius: 3px; white-space: nowrap; box-shadow: 0 0 0 1px rgb(0 0 0 / .08); }
+.room-tag b { display: block; font-weight: 600; }
+.room-tag span { font-family: var(--font-mono); font-size: 10px; color: #4b544f; }
+.dim-tag { font-family: var(--font-mono); font-size: 11px; color: #fff; background: var(--accent); padding: 2px 6px; border-radius: 3px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+.overlay { position: absolute; display: flex; gap: 6px; z-index: 2; }
+.ov-tl { top: 10px; left: 10px; flex-wrap: wrap; max-width: calc(100% - 20px); }
+.ov-tr { top: 10px; right: 10px; flex-direction: column; }
+.ov-tr .btn, .ov-tl .btn { background: var(--panel); }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; background: var(--panel); }
+.seg .btn { border: 0; border-radius: 0; }
+.seg .btn + .btn { border-left: 1px solid var(--line); }
+
+.dock { position: absolute; left: 10px; bottom: 10px; z-index: 2; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; display: grid; gap: 8px; width: 250px; max-width: calc(100% - 20px); }
+.slider { display: grid; grid-template-columns: 72px 1fr 64px; align-items: center; gap: 8px; }
+.slider label { font-family: var(--font-display); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; font-size: 12px; color: var(--ink-2); }
+.slider output { font-family: var(--font-mono); font-size: 11px; text-align: right; font-variant-numeric: tabular-nums; }
+input[type="range"] { width: 100%; accent-color: var(--accent); }
+
+/* title block, the drawing-sheet convention */
+.titleblock { position: absolute; right: 10px; bottom: 10px; z-index: 2; background: var(--panel); border: 1.5px solid var(--ink); display: grid; grid-template-columns: auto auto; font-size: 11px; min-width: 230px; }
+.titleblock > div { padding: 4px 8px; border-top: 1px solid var(--line); display: grid; gap: 1px; }
+.titleblock > div:nth-child(odd) { border-right: 1px solid var(--line); }
+.titleblock .tb-project { grid-column: 1 / -1; border-top: 0; border-right: 0 !important; }
+.titleblock .k { font-family: var(--font-display); text-transform: uppercase; letter-spacing: .1em; font-size: 10px; color: var(--ink-2); }
+.titleblock .v { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.titleblock .tb-project .v { font-family: var(--font-display); font-weight: 600; font-size: 16px; letter-spacing: .02em; }
+
+.busy { position: absolute; inset: 0; display: grid; place-items: center; z-index: 5; background: color-mix(in srgb, var(--ground) 75%, transparent); font-family: var(--font-mono); }
+.drop-hint { position: absolute; inset: 12px; border: 2px dashed var(--accent); border-radius: var(--r); display: grid; place-items: center; z-index: 6; background: color-mix(in srgb, var(--accent-soft) 70%, transparent); font-weight: 600; color: var(--accent); pointer-events: none; }
+
+/* properties */
+.prop-head h2 { font-family: var(--font-display); font-weight: 600; font-size: 22px; margin: 2px 0 4px; text-wrap: balance; line-height: 1.1; overflow-wrap: anywhere; }
+.cls-badge { display: inline-block; font-family: var(--font-mono); font-size: 11px; padding: 1px 7px; border-radius: 3px; background: var(--accent-soft); color: var(--accent); }
+.guid { display: flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 11px; color: var(--ink-2); margin: 6px 0 10px; overflow-wrap: anywhere; }
+.actions { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.pset { border-top: 1px solid var(--line); padding-block: 8px; }
+.pset h3 { font-family: var(--font-mono); font-weight: 500; font-size: 11px; color: var(--ink-2); margin: 0 0 6px; overflow-wrap: anywhere; }
+.pset dl { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 3px 10px; margin: 0; }
+.pset dt { color: var(--ink-2); overflow-wrap: anywhere; }
+.pset dd { margin: 0; font-family: var(--font-mono); font-size: 12px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.muted { color: var(--ink-2); }
+.hint { color: var(--ink-2); line-height: 1.5; max-width: 40ch; }
+table.sched { width: 100%; border-collapse: collapse; font-size: 12px; }
+table.sched th { text-align: left; font-family: var(--font-display); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; font-size: 11px; color: var(--ink-2); border-bottom: 1px solid var(--line); padding: 4px 4px; }
+table.sched td { padding: 4px 4px; border-bottom: 1px solid var(--line); }
+table.sched td.num { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+table.sched tr.click { cursor: pointer; }
+table.sched tr.click:hover td { background: var(--panel-2); }
+.type-pill { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.type-pill i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+.tally { display: grid; grid-template-columns: 1fr auto; gap: 3px 10px; margin: 0 0 12px; }
+.tally dd { margin: 0; font-family: var(--font-mono); text-align: right; font-variant-numeric: tabular-nums; }
+.tally dt { font-family: var(--font-mono); font-size: 12px; }
+
+/* status bar */
+.status { display: flex; gap: 16px; padding-block: 7px; font-size: 12px; color: var(--ink-2); min-width: 0; }
+.status span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.status #hoverInfo { font-family: var(--font-mono); margin-right: auto; min-width: 0; }
+
+.toast { position: fixed; left: 50%; bottom: calc(40px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 20; background: var(--ink); color: var(--panel); padding: 10px 14px; border-radius: var(--r); max-width: min(520px, calc(100% - 32px)); line-height: 1.45; }
+.toast.err { background: var(--danger); color: #fff; }
+
+@media (max-width: 1100px) { .work { grid-template-columns: 230px minmax(0, 1fr) 280px; } }
+@media (max-width: 860px) {
+  .only-narrow { display: inline-flex; }
+  .work { grid-template-columns: minmax(0, 1fr); }
+  .work > .panel { position: absolute; inset: 0; z-index: 10; padding: 12px; border: 1px solid var(--line); border-radius: var(--r); box-shadow: 0 10px 30px rgb(0 0 0 / .18); }
+  .work > .panel:not(.open) { display: none; }
+  .titleblock { display: none; }
+  .status .hide-narrow { display: none; }
+}
+@media (max-width: 520px) {
+  .dock { width: auto; right: 10px; padding: 8px 10px; }
+  .ov-tl { max-width: calc(100% - 84px); }
+  .tools .label-txt { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<header class="bar">
+  <div class="brand">
+    <h1>Sightline</h1>
+    <span class="model-name" id="modelName">Riverside Office Block</span>
+  </div>
+  <div class="tools">
+    <button class="btn only-narrow" id="btnTree" aria-pressed="false">Model</button>
+    <button class="btn only-narrow" id="btnProps" aria-pressed="false">Properties</button>
+    <button class="btn" id="btnSample" title="Reload the built-in sample building">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 14V6l6-4 6 4v8H2z"/><path d="M6 14V9h4v5"/></svg><span class="label-txt">Sample</span>
+    </button>
+    <button class="btn primary" id="btnOpen" title="Open an .ifc file (or drop one on the viewport)">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 11V2M4.5 5.5 8 2l3.5 3.5M2 10v4h12v-4"/></svg><span class="label-txt">Open IFC</span>
+    </button>
+    <input type="file" id="fileInput" accept=".ifc" hidden>
+  </div>
+</header>
+
+<div class="work">
+  <aside class="panel" id="treePanel" aria-label="Model tree">
+    <div class="panel-head"><p class="eyebrow">Model tree</p><button class="btn small only-narrow" data-close="treePanel">Close</button></div>
+    <input class="search" id="search" type="search" placeholder="Filter by name, class or GlobalId" autocomplete="off">
+    <div class="chips" id="classChips" aria-label="Show or hide IFC classes"></div>
+    <div class="scroll" id="tree"></div>
+  </aside>
+
+  <section class="stage" id="stage" aria-label="3D viewport">
+    <div class="overlay ov-tl">
+      <div class="seg" role="group" aria-label="Pointer mode">
+        <button class="btn" id="modeSelect" aria-pressed="true">Select</button>
+        <button class="btn" id="modeMeasure" aria-pressed="false">Measure</button>
+      </div>
+      <button class="btn" id="btnXray" aria-pressed="false" title="See through everything except the selection">X-ray</button>
+      <button class="btn" id="btnLabels" aria-pressed="true">Room tags</button>
+      <button class="btn" id="btnShowAll" hidden>Show all</button>
+      <button class="btn" id="btnClearDims" hidden>Clear dims</button>
+    </div>
+    <div class="overlay ov-tr" role="group" aria-label="Camera views">
+      <button class="btn small" data-view="iso">Iso</button>
+      <button class="btn small" data-view="top">Plan</button>
+      <button class="btn small" data-view="front">South</button>
+      <button class="btn small" data-view="side">East</button>
+      <button class="btn small" data-view="fit">Fit</button>
+    </div>
+    <div class="dock">
+      <div class="slider"><label for="planCut">Plan cut</label><input id="planCut" type="range" min="0" max="1000" value="1000"><output id="planCutOut">off</output></div>
+      <div class="slider"><label for="sectCut">Section</label><input id="sectCut" type="range" min="0" max="1000" value="1000"><output id="sectCutOut">off</output></div>
+      <div class="slider"><label for="explode">Explode</label><input id="explode" type="range" min="0" max="100" value="0"><output id="explodeOut">0 mm</output></div>
+    </div>
+    <div class="titleblock" aria-label="Title block">
+      <div class="tb-project"><span class="k">Project</span><span class="v" id="tbProject">Riverside Office Block</span></div>
+      <div><span class="k">Drawing</span><span class="v">3D coordination</span></div>
+      <div><span class="k">Schema</span><span class="v" id="tbSchema">IFC4</span></div>
+      <div><span class="k">Elements</span><span class="v" id="tbCount">0</span></div>
+      <div><span class="k">Storeys</span><span class="v" id="tbStoreys">0</span></div>
+      <div><span class="k">Units</span><span class="v">mm · m²</span></div>
+      <div><span class="k">Scale</span><span class="v">NTS</span></div>
+    </div>
+    <div class="busy" id="busy" hidden><span id="busyText">Loading…</span></div>
+    <div class="drop-hint" id="dropHint" hidden>Drop an .ifc file to open it</div>
+  </section>
+
+  <aside class="panel" id="propsPanel" aria-label="Properties">
+    <div class="panel-head"><p class="eyebrow" id="propsTitle">Model summary</p><button class="btn small only-narrow" data-close="propsPanel">Close</button></div>
+    <div class="scroll" id="props"></div>
+  </aside>
+</div>
+
+<footer class="status">
+  <span id="hoverInfo">Ready</span>
+  <span class="hide-narrow" id="modeHint">Drag to orbit · right-drag to pan · scroll to zoom · double-click to zoom to an element</span>
+</footer>
+<div class="toast" id="toast" hidden></div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+
+const WEBIFC_BASE = 'https://cdn.jsdelivr.net/npm/web-ifc@0.0.77/';
+
+const $ = (s) => document.querySelector(s);
+const cssVar = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const mm = (m) => Math.round(m * 1000).toLocaleString('en-GB').replace(/,/g, ' ') + ' mm';
+const m2 = (a) => a.toFixed(2) + ' m²';
+const m3 = (v) => v.toFixed(2) + ' m³';
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// Same thresholds as ConsoleApp1/Program.cs
+function classifyRoom(area) {
+  if (area < 10) return 'Store';
+  if (area < 30) return 'Office';
+  return 'Meeting room';
+}
+const ROOM_COLORS = { 'Store': '#d6b25e', 'Office': '#8fb996', 'Meeting room': '#7f9fd8', 'Circulation': '#c3c7c0' };
+
+/* ---------- renderer & scene ---------- */
+const stage = $('#stage');
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+stage.prepend(renderer.domElement);
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.domElement.className = 'labels';
+stage.appendChild(labelRenderer.domElement);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(40, 1, 0.05, 20000);
+camera.position.set(38, 28, 40);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.12;
+scene.add(new THREE.HemisphereLight(0xffffff, 0x7d857c, 1.7));
+const sun = new THREE.DirectionalLight(0xffffff, 1.7); sun.position.set(30, 50, 20); scene.add(sun);
+const fill = new THREE.DirectionalLight(0xffffff, 0.55); fill.position.set(-35, 20, -40); scene.add(fill);
+
+let grid = null;
+const edgeMat = new THREE.LineBasicMaterial({ color: 0x27302b, transparent: true, opacity: 0.4 });
+function applyTheme() {
+  scene.background = new THREE.Color(cssVar('--ground'));
+  if (grid) { scene.remove(grid); grid.geometry.dispose(); }
+  grid = new THREE.GridHelper(200, 200, new THREE.Color(cssVar('--grid-a')), new THREE.Color(cssVar('--grid-b')));
+  grid.position.y = -0.27;
+  grid.visible = M ? M.showGrid : true;
+  scene.add(grid);
+  updateEdgeLook();
+}
+function updateEdgeLook() {
+  const dark = new THREE.Color(cssVar('--ground')).getHSL({}).l < 0.4;
+  edgeMat.color.set(state.xray ? cssVar('--ink-2') : (dark ? '#0b0e0c' : '#27302b'));
+  edgeMat.opacity = state.xray ? 0.35 : (dark ? 0.6 : 0.4);
+}
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+new MutationObserver(applyTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+new ResizeObserver(() => {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  if (!w || !h) return;
+  renderer.setSize(w, h);
+  labelRenderer.setSize(w, h);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}).observe(stage);
+
+/* ---------- materials ---------- */
+const matCache = new Map();
+function mat(color, opacity = 1) {
+  const key = color + '|' + opacity.toFixed(2);
+  if (!matCache.has(key)) {
+    matCache.set(key, new THREE.MeshStandardMaterial({
+      color, roughness: 0.88, metalness: 0, side: THREE.DoubleSide,
+      transparent: opacity < 1, opacity, depthWrite: opacity >= 0.6,
+      polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1,
+    }));
+  }
+  return matCache.get(key);
+}
+const selMat = new THREE.MeshStandardMaterial({ color: 0xe39a2a, emissive: 0xe39a2a, emissiveIntensity: 0.35, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
+const hoverMat = new THREE.MeshStandardMaterial({ color: 0x9db3ef, emissive: 0x2b53c2, emissiveIntensity: 0.2, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
+const xrayMat = new THREE.MeshBasicMaterial({ color: 0x8a948e, transparent: true, opacity: 0.07, depthWrite: false, side: THREE.DoubleSide });
+
+/* ---------- state ---------- */
+let M = null; // current model
+const state = {
+  selected: null, hover: null, xray: false, labels: true, measure: false,
+  hiddenClasses: new Set(), isolated: null, explode: 0, planCut: 1, sectCut: 1, query: '',
+};
+let uidSeq = 0;
+
+function newModel(meta) {
+  if (M) disposeModel();
+  const root = new THREE.Group();
+  scene.add(root);
+  state.selected = state.hover = null;
+  state.isolated = null;
+  state.hiddenClasses = new Set();
+  clearMeasures();
+  M = { root, storeys: [], elements: [], meshes: [], byUid: new Map(), showGrid: true, ...meta };
+  return M;
+}
+function disposeModel() {
+  M.root.traverse((o) => {
+    if (o.geometry) o.geometry.dispose();
+    if (o.isCSS2DObject) o.element.remove();
+  });
+  scene.remove(M.root);
+  if (M.ifcId != null && ifc) ifc.api.CloseModel(M.ifcId);
+}
+function addStorey(name, elevation) {
+  const group = new THREE.Group();
+  group.name = name;
+  M.root.add(group);
+  const s = { name, elevation, group, hidden: false, index: M.storeys.length };
+  M.storeys.push(s);
+  return s;
+}
+function addElement(el, storey, meshes) {
+  el.uid = ++uidSeq;
+  el.storey = storey.index;
+  el.hidden = false;
+  el.object = new THREE.Group();
+  el.meshes = meshes;
+  for (const m of meshes) {
+    m.userData.el = el;
+    m.userData.base = m.material;
+    el.object.add(m);
+    M.meshes.push(m);
+  }
+  storey.group.add(el.object);
+  M.elements.push(el);
+  M.byUid.set(el.uid, el);
+  return el;
+}
+function withEdges(mesh) {
+  const e = new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry, 25), edgeMat);
+  e.raycast = () => {};
+  mesh.add(e);
+  return mesh;
+}
+
+/* ---------- sample building ---------- */
+function rng(seed) { return () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+const B64 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_$';
+let rand = rng(7);
+const guid = () => { let s = B64[Math.floor(rand() * 4)]; for (let i = 0; i < 21; i++) s += B64[Math.floor(rand() * 64)]; return s; };
+
+function box(x0, x1, y0, y1, t) {
+  const g = new THREE.BoxGeometry(x1 - x0, y1 - y0, t);
+  g.translate((x0 + x1) / 2, (y0 + y1) / 2, 0);
+  return g;
+}
+// Solid wall pieces around rectangular openings, in wall-local coords (x along the wall, y up, z through).
+function wallGeometry(len, thick, height, openings) {
+  const parts = [];
+  let cur = 0;
+  for (const o of [...openings].sort((a, b) => a.at - b.at)) {
+    const s = o.at - o.w / 2, e = o.at + o.w / 2;
+    if (s > cur) parts.push(box(cur, s, 0, height, thick));
+    if (o.sill > 0) parts.push(box(s, e, 0, o.sill, thick));
+    if (o.sill + o.h < height) parts.push(box(s, e, o.sill + o.h, height, thick));
+    cur = e;
+  }
+  if (cur < len) parts.push(box(cur, len, 0, height, thick));
+  return mergeGeometries(parts);
+}
+function placeOnWall(obj, wall, at, y) {
+  if (wall.axis === 'x') obj.position.set(wall.x + at, y, wall.z);
+  else { obj.position.set(wall.x, y, wall.z + at); obj.rotation.y = -Math.PI / 2; }
+}
+
+function buildSample() {
+  rand = rng(7);
+  newModel({ name: 'Riverside Office Block', schema: 'IFC4', source: 'sample' });
+  const H = 3.2, SLAB = 0.25, EXT = 0.3, COR = 0.2, PT = 0.12, L = 24, D = 14;
+  const CS = 6, CN = 8; // corridor between z = 6 and z = 8
+  const COLS = [6, 12, 18];
+  const floors = [
+    { name: 'Level 00', south: [0, 8, 12, 16, 24], north: [0, 5, 8, 9.5, 11, 17, 21, 24] },
+    { name: 'Level 01', south: [0, 6, 12, 18, 24], north: [0, 4, 8, 9.5, 13, 24] },
+  ];
+  const C = { ext: '#d8d2c3', int: '#ecebe5', core: '#cfcfc6', slab: '#b4b9b0', roof: '#8e958d', col: '#a2a9a1', door: '#8a6847', glass: '#8fc6dc', frame: '#3b4541' };
+  let wallNo = 0, doorNo = 0, winNo = 0, roomNo = 0;
+
+  const addWall = (storey, e, w) => {
+    const geo = wallGeometry(w.len, w.thick, w.height, w.openings);
+    const mesh = withEdges(new THREE.Mesh(geo, mat(w.color)));
+    placeOnWall(mesh, w, 0, e);
+    const openArea = w.openings.reduce((a, o) => a + o.w * o.h, 0);
+    addElement({
+      ifcClass: 'IfcWall', name: w.name, guid: guid(), material: w.material,
+      psets: {
+        Pset_WallCommon: { IsExternal: w.external, LoadBearing: w.loadBearing, FireRating: w.fire, ...(w.external ? { ThermalTransmittance: '0.18 W/m²K' } : {}) },
+        Qto_WallBaseQuantities: { Length: mm(w.len), Height: mm(w.height), Width: mm(w.thick), NetSideArea: m2(w.len * w.height - openArea), NetVolume: m3((w.len * w.height - openArea) * w.thick) },
+      },
+    }, storey, [mesh]);
+    for (const o of w.openings) o.place?.(storey, e, w, o);
+  };
+  const windowAt = (at, w = 1.4) => ({ at, w, sill: 0.9, h: 1.5, place: placeWindow });
+  const doorAt = (at, w = 0.9, external = false, fire = 'EI 30') => ({ at, w, sill: 0, h: 2.1, external, fire, place: placeDoor });
+
+  function placeWindow(storey, e, wall, o) {
+    const frameT = 0.06, ft = 0.08;
+    const frame = mergeGeometries([
+      box(-o.w / 2, o.w / 2, 0, frameT, ft), box(-o.w / 2, o.w / 2, o.h - frameT, o.h, ft),
+      box(-o.w / 2, -o.w / 2 + frameT, 0, o.h, ft), box(o.w / 2 - frameT, o.w / 2, 0, o.h, ft),
+      box(-0.025, 0.025, 0, o.h, ft),
+    ]);
+    const fm = withEdges(new THREE.Mesh(frame, mat(C.frame)));
+    const gm = new THREE.Mesh(new THREE.BoxGeometry(o.w - frameT, o.h - frameT, 0.02).translate(0, o.h / 2, 0), mat(C.glass, 0.35));
+    for (const m of [fm, gm]) placeOnWall(m, wall, o.at, e + o.sill);
+    const name = `W-${storey.name.slice(-2)}-${String(++winNo).padStart(2, '0')}`;
+    addElement({
+      ifcClass: 'IfcWindow', name, guid: guid(), material: 'Aluminium frame, double glazing',
+      psets: {
+        Pset_WindowCommon: { IsExternal: true, ThermalTransmittance: '1.10 W/m²K', GlazingAreaFraction: 0.78, Host: wall.name },
+        Qto_WindowBaseQuantities: { Width: mm(o.w), Height: mm(o.h), SillHeight: mm(o.sill), Area: m2(o.w * o.h) },
+      },
+    }, storey, [fm, gm]);
+  }
+  function placeDoor(storey, e, wall, o) {
+    const leaf = withEdges(new THREE.Mesh(new THREE.BoxGeometry(o.w - 0.04, o.h - 0.02, 0.05).translate(0, (o.h - 0.02) / 2, 0), mat(C.door)));
+    placeOnWall(leaf, wall, o.at, e);
+    const name = `D-${storey.name.slice(-2)}-${String(++doorNo).padStart(2, '0')}`;
+    addElement({
+      ifcClass: 'IfcDoor', name, guid: guid(), material: o.external ? 'Aluminium, glazed' : 'Timber veneer, solid core',
+      psets: {
+        Pset_DoorCommon: { IsExternal: o.external, FireRating: o.fire, HandicapAccessible: o.w >= 0.9, Host: wall.name },
+        Qto_DoorBaseQuantities: { Width: mm(o.w), Height: mm(o.h), Area: m2(o.w * o.h) },
+      },
+    }, storey, [leaf]);
+  }
+  // Door centred in a room span, nudged away from corridor columns.
+  const doorPos = (a, b) => {
+    let at = (a + b) / 2;
+    for (const c of COLS) if (Math.abs(at - c) < 0.75) at = c + (at >= c ? 0.9 : -0.9);
+    return at;
+  };
+  const windowsFor = (a, b, offset) => {
+    const span = b - a, n = Math.max(1, Math.floor(span / 2.6)), w = Math.min(1.4, span - 0.7);
+    return Array.from({ length: n }, (_, i) => windowAt(offset + a + (span * (i + 0.5)) / n, w));
+  };
+  const insets = (a, b, lo, hi, xLo, xHi) => [a + (a === xLo ? EXT / 2 : lo), b - (b === xHi ? EXT / 2 : hi)];
+
+  const roomList = [];
+  const addRoom = (storey, e, x0, x1, z0, z1, kind) => {
+    const w = x1 - x0, d = z1 - z0, area = w * d;
+    const type = kind || classifyRoom(area);
+    const color = ROOM_COLORS[type];
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, 0.04, d), mat(color, 0.9));
+    mesh.position.set((x0 + x1) / 2, e + 0.02, (z0 + z1) / 2);
+    const name = kind ? `Corridor ${storey.name.slice(-2)}` : `Room ${storey.name.slice(-1)}.${String(++roomNo).padStart(2, '0')}`;
+    const tag = document.createElement('div');
+    tag.className = 'room-tag';
+    tag.innerHTML = `<b>${esc(name)}</b><span>${area.toFixed(1)} m² · ${esc(type)}</span>`;
+    const label = new CSS2DObject(tag);
+    label.position.set(0, 0.6, 0);
+    label.userData.isRoomTag = true;
+    mesh.add(label);
+    const el = addElement({
+      ifcClass: 'IfcSpace', name, guid: guid(), material: '—', roomType: type, area, label,
+      psets: {
+        Pset_SpaceCommon: { Classification: type, IsExternal: false, PubliclyAccessible: !!kind },
+        Qto_SpaceBaseQuantities: { NetFloorArea: m2(area), NetPerimeter: mm(2 * (w + d)), Height: mm(H - SLAB), NetVolume: m3(area * (H - SLAB)) },
+      },
+    }, storey, [mesh]);
+    if (!kind) roomList.push(el);
+  };
+
+  floors.forEach((f, i) => {
+    const e = i * H;
+    const storey = addStorey(f.name, e);
+    const wh = H - SLAB;
+    // floor slab
+    const slab = withEdges(new THREE.Mesh(new THREE.BoxGeometry(L + EXT, SLAB, D + EXT), mat(C.slab)));
+    slab.position.set(L / 2, e - SLAB / 2, D / 2);
+    addElement({
+      ifcClass: 'IfcSlab', name: `SL-${f.name.slice(-2)}`, guid: guid(), material: 'Concrete C30/37',
+      psets: { Pset_SlabCommon: { IsExternal: i === 0, LoadBearing: true, FireRating: 'REI 90' }, Qto_SlabBaseQuantities: { Width: mm(SLAB), GrossArea: m2((L + EXT) * (D + EXT)), GrossVolume: m3((L + EXT) * (D + EXT) * SLAB) } },
+    }, storey, [slab]);
+
+    const ext = { thick: EXT, height: wh, color: C.ext, material: 'Brick cavity wall, 300 mm', external: true, loadBearing: true, fire: 'REI 90' };
+    const southWin = f.south.slice(0, -1).flatMap((a, k) => windowsFor(a, f.south[k + 1], EXT / 2));
+    const northWin = f.north.slice(0, -1).flatMap((a, k) => windowsFor(a, f.north[k + 1], EXT / 2));
+    const wallLen = D - EXT;
+    const westOpen = [windowAt(3 - EXT / 2), windowAt(11 - EXT / 2), i === 0 ? doorAt(7 - EXT / 2, 1.8, true, '—') : windowAt(7 - EXT / 2, 1.2)];
+    const eastOpen = [windowAt(3 - EXT / 2), windowAt(11 - EXT / 2), i === 0 ? doorAt(7 - EXT / 2, 1.0, true, 'EI 30') : windowAt(7 - EXT / 2, 1.2)];
+    addWall(storey, e, { ...ext, name: `EXT-S-${f.name.slice(-2)}`, axis: 'x', x: -EXT / 2, z: 0, len: L + EXT, openings: southWin });
+    addWall(storey, e, { ...ext, name: `EXT-N-${f.name.slice(-2)}`, axis: 'x', x: -EXT / 2, z: D, len: L + EXT, openings: northWin });
+    addWall(storey, e, { ...ext, name: `EXT-W-${f.name.slice(-2)}`, axis: 'z', x: 0, z: EXT / 2, len: wallLen, openings: westOpen });
+    addWall(storey, e, { ...ext, name: `EXT-E-${f.name.slice(-2)}`, axis: 'z', x: L, z: EXT / 2, len: wallLen, openings: eastOpen });
+
+    // corridor walls with a door into every room
+    const core = { thick: COR, height: wh, color: C.core, material: 'Concrete block, 200 mm', external: false, loadBearing: true, fire: 'EI 60', axis: 'x', x: EXT / 2, len: L - EXT };
+    const sDoors = f.south.slice(0, -1).map((a, k) => doorPos(a, f.south[k + 1]) - EXT / 2).map((at) => doorAt(at));
+    const nDoors = f.north.slice(0, -1).map((a, k) => {
+      const b = f.north[k + 1];
+      return doorAt(doorPos(a, b) - EXT / 2, Math.min(0.9, b - a - 0.5));
+    });
+    addWall(storey, e, { ...core, name: `COR-S-${f.name.slice(-2)}`, z: CS, openings: sDoors });
+    addWall(storey, e, { ...core, name: `COR-N-${f.name.slice(-2)}`, z: CN, openings: nDoors });
+
+    // partitions
+    const pt = { thick: PT, height: wh, color: C.int, material: 'Gypsum stud partition, 120 mm', external: false, loadBearing: false, fire: 'EI 30', axis: 'z', openings: [] };
+    f.south.slice(1, -1).forEach((x, k) => addWall(storey, e, { ...pt, name: `PT-S${k + 1}-${f.name.slice(-2)}`, x, z: EXT / 2, len: CS - COR / 2 - EXT / 2 }));
+    f.north.slice(1, -1).forEach((x, k) => addWall(storey, e, { ...pt, name: `PT-N${k + 1}-${f.name.slice(-2)}`, x, z: CN + COR / 2, len: D - EXT / 2 - CN - COR / 2 }));
+
+    // columns on the corridor grid
+    COLS.forEach((x) => [CS, CN].forEach((z, k) => {
+      const c = withEdges(new THREE.Mesh(new THREE.BoxGeometry(0.3, wh, 0.3), mat(C.col)));
+      c.position.set(x, e + wh / 2, z);
+      addElement({
+        ifcClass: 'IfcColumn', name: `C-${String.fromCharCode(66 + k)}${x / 6 + 1}-${f.name.slice(-2)}`, guid: guid(), material: 'Concrete C40/50',
+        psets: { Pset_ColumnCommon: { LoadBearing: true, IsExternal: false, FireRating: 'R 90', Reference: '300 × 300' }, Qto_ColumnBaseQuantities: { Length: mm(wh), CrossSectionArea: m2(0.09), GrossVolume: m3(0.09 * wh) } },
+      }, storey, [c]);
+    }));
+
+    // rooms (net of wall thickness) and the corridor
+    f.south.slice(0, -1).forEach((a, k) => {
+      const [x0, x1] = insets(a, f.south[k + 1], PT / 2, PT / 2, 0, L);
+      addRoom(storey, e, x0, x1, EXT / 2, CS - COR / 2);
+    });
+    f.north.slice(0, -1).forEach((a, k) => {
+      const [x0, x1] = insets(a, f.north[k + 1], PT / 2, PT / 2, 0, L);
+      addRoom(storey, e, x0, x1, CN + COR / 2, D - EXT / 2);
+    });
+    addRoom(storey, e, EXT / 2, L - EXT / 2, CS + COR / 2, CN - COR / 2, 'Circulation');
+  });
+
+  // roof
+  const roofE = floors.length * H;
+  const rs = addStorey('Roof', roofE);
+  const roof = withEdges(new THREE.Mesh(new THREE.BoxGeometry(L + EXT, SLAB, D + EXT), mat(C.roof)));
+  roof.position.set(L / 2, roofE - SLAB / 2, D / 2);
+  addElement({
+    ifcClass: 'IfcRoof', name: 'RF-01', guid: guid(), material: 'Concrete deck, PIR insulation, EPDM',
+    psets: { Pset_RoofCommon: { IsExternal: true, ThermalTransmittance: '0.15 W/m²K', FireRating: 'REI 60' }, Qto_RoofBaseQuantities: { GrossArea: m2((L + EXT) * (D + EXT)) } },
+  }, rs, [roof]);
+  const par = { thick: 0.2, height: 0.9, color: C.ext, material: 'Brick parapet, 200 mm', external: true, loadBearing: false, fire: '—', openings: [] };
+  addWall(rs, roofE, { ...par, name: 'PAR-S', axis: 'x', x: -EXT / 2, z: -EXT / 2 + 0.1, len: L + EXT });
+  addWall(rs, roofE, { ...par, name: 'PAR-N', axis: 'x', x: -EXT / 2, z: D + EXT / 2 - 0.1, len: L + EXT });
+  addWall(rs, roofE, { ...par, name: 'PAR-W', axis: 'z', x: -EXT / 2 + 0.1, z: -EXT / 2 + 0.2, len: D + EXT - 0.4 });
+  addWall(rs, roofE, { ...par, name: 'PAR-E', axis: 'z', x: L + EXT / 2 - 0.1, z: -EXT / 2 + 0.2, len: D + EXT - 0.4 });
+
+  M.rooms = roomList;
+  M.root.position.set(-L / 2, 0, -D / 2);
+  finishLoad();
+  setPlanCutAt(H + 1.2); // open on a plan through Level 01
+}
+
+/* ---------- IFC loading (web-ifc) ---------- */
+let ifc = null;
+async function getIfc() {
+  if (ifc) return ifc;
+  const W = await import(WEBIFC_BASE + 'web-ifc-api.js');
+  const api = new W.IfcAPI();
+  api.SetWasmPath(WEBIFC_BASE, true);
+  await api.Init();
+  ifc = { api, W };
+  return ifc;
+}
+const ifcValue = (v) => {
+  if (v == null) return '—';
+  const raw = v.value ?? v._representationValue ?? v;
+  if (typeof raw === 'boolean') return raw;
+  if (typeof raw === 'number') return Number.isInteger(raw) ? raw : +raw.toFixed(4);
+  return typeof raw === 'object' ? '—' : String(raw);
+};
+
+async function loadIfc(file) {
+  showBusy(`Starting IFC engine…`);
+  try {
+    const { api } = await getIfc();
+    showBusy(`Reading ${file.name}…`);
+    const data = new Uint8Array(await file.arrayBuffer());
+    await nextFrame();
+    newModel({ name: file.name.replace(/\.ifc$/i, ''), source: 'ifc', schema: '' });
+    const id = api.OpenModel(data, { COORDINATE_TO_ORIGIN: true });
+    M.ifcId = id;
+    M.schema = api.GetModelSchema(id);
+
+    const spatial = await api.properties.getSpatialStructure(id, false);
+    const storeyNodes = [], storeyOf = new Map();
+    (function walk(node, sIdx) {
+      if (String(node.type).toUpperCase() === 'IFCBUILDINGSTOREY') {
+        sIdx = storeyNodes.length;
+        const line = api.GetLine(id, node.expressID);
+        storeyNodes.push({ name: line.Name?.value || `Storey #${node.expressID}`, elevation: +(line.Elevation?.value ?? 0), old: sIdx });
+      } else if (sIdx != null) storeyOf.set(node.expressID, sIdx);
+      for (const c of node.children || []) walk(c, sIdx);
+    })(spatial, null);
+    const order = [...storeyNodes].sort((a, b) => a.elevation - b.elevation);
+    const remap = new Map();
+    order.forEach((s) => remap.set(s.old, addStorey(s.name, s.elevation)));
+    let unassigned = null;
+    const storeyFor = (eid) => {
+      const s = storeyOf.get(eid);
+      if (s != null) return remap.get(s);
+      return (unassigned ??= addStorey('Unassigned', Infinity));
+    };
+
+    showBusy('Building geometry…');
+    await nextFrame();
+    const pending = new Map();
+    let tris = 0;
+    const mtx = new THREE.Matrix4();
+    api.StreamAllMeshes(id, (flat) => {
+      const eid = flat.expressID;
+      let entry = pending.get(eid);
+      if (!entry) {
+        const line = api.GetLine(id, eid);
+        entry = {
+          el: { ifcClass: api.GetNameFromTypeCode(line.type), name: line.Name?.value || line.ObjectType?.value || `#${eid}`, guid: line.GlobalId?.value || '', expressID: eid },
+          storey: storeyFor(eid), meshes: [],
+        };
+        pending.set(eid, entry);
+      }
+      for (let i = 0; i < flat.geometries.size(); i++) {
+        const pg = flat.geometries.get(i);
+        const g = api.GetGeometry(id, pg.geometryExpressID);
+        const v = api.GetVertexArray(g.GetVertexData(), g.GetVertexDataSize());
+        const idx = api.GetIndexArray(g.GetIndexData(), g.GetIndexDataSize());
+        const n = v.length / 6, pos = new Float32Array(n * 3), nor = new Float32Array(n * 3);
+        for (let k = 0; k < n; k++) {
+          pos[k * 3] = v[k * 6]; pos[k * 3 + 1] = v[k * 6 + 1]; pos[k * 3 + 2] = v[k * 6 + 2];
+          nor[k * 3] = v[k * 6 + 3]; nor[k * 3 + 1] = v[k * 6 + 4]; nor[k * 3 + 2] = v[k * 6 + 5];
+        }
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+        geo.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+        geo.setIndex(new THREE.BufferAttribute(new Uint32Array(idx), 1));
+        geo.applyMatrix4(mtx.fromArray(pg.flatTransformation));
+        g.delete();
+        tris += idx.length / 3;
+        const c = pg.color;
+        const color = '#' + new THREE.Color(c.x, c.y, c.z).getHexString();
+        entry.meshes.push(new THREE.Mesh(geo, mat(color, entry.el.ifcClass === 'IfcSpace' ? 0.25 : Math.max(0.15, c.w))));
+      }
+    });
+    const edges = tris < 400000;
+    for (const { el, storey, meshes } of pending.values()) {
+      if (edges) meshes.forEach(withEdges);
+      addElement(el, storey, meshes);
+    }
+    if (!M.elements.length) throw new Error('This file has no geometry the viewer can draw.');
+    state.hiddenClasses.add('IfcSpace');
+    const box = new THREE.Box3().setFromObject(M.root);
+    const c = box.getCenter(new THREE.Vector3());
+    M.root.position.set(-c.x, -box.min.y, -c.z);
+    finishLoad();
+    toast(`Opened ${file.name}: ${M.elements.length.toLocaleString()} elements on ${M.storeys.length} storeys.`);
+  } catch (err) {
+    console.error(err);
+    const offline = /fetch|import|wasm|module|network/i.test(String(err?.message || err));
+    toast(offline
+      ? `The IFC engine couldn't load. It is fetched from cdn.jsdelivr.net, so this page needs network access to that site. Open BimViewer/index.html from a local web server to read IFC files.`
+      : `Couldn't open ${file.name}: ${err.message || err}`, true);
+    if (!M || !M.elements.length) buildSample();
+  } finally {
+    hideBusy();
+  }
+}
+
+/* ---------- after load ---------- */
+function finishLoad() {
+  $('#modelName').textContent = M.name;
+  $('#tbProject').textContent = M.name;
+  $('#tbSchema').textContent = M.schema || '—';
+  $('#tbCount').textContent = M.elements.length.toLocaleString();
+  $('#tbStoreys').textContent = M.storeys.length;
+  state.explode = 0; state.planCut = 1; state.sectCut = 1;
+  $('#explode').value = 0; $('#planCut').value = 1000; $('#sectCut').value = 1000;
+  M.root.updateMatrixWorld(true);
+  M.baseBox = new THREE.Box3().setFromObject(M.root);
+  buildTree();
+  applyVisibility();
+  applyLook();
+  applyExplode();
+  renderProps();
+  setView('iso', true);
+}
+
+/* ---------- visibility & look ---------- */
+function isShown(el) {
+  return !el.hidden && !state.hiddenClasses.has(el.ifcClass) && !M.storeys[el.storey].hidden && (!state.isolated || state.isolated.has(el));
+}
+function applyVisibility() {
+  for (const el of M.elements) el.object.visible = isShown(el);
+  $('#btnShowAll').hidden = !(state.isolated || M.elements.some((e) => e.hidden) || M.storeys.some((s) => s.hidden) || state.hiddenClasses.size);
+  if (state.selected && !isShown(state.selected)) select(null);
+  refreshTreeState();
+  updateLabels();
+}
+function applyLook() {
+  if (!M) return;
+  for (const el of M.elements) {
+    for (const mesh of el.meshes) {
+      let m = mesh.userData.base;
+      if (el === state.selected) m = selMat;
+      else if (el === state.hover && !state.measure) m = hoverMat;
+      else if (state.xray) m = xrayMat;
+      mesh.material = m;
+    }
+  }
+}
+// A room tag shows only when its room is visible, below the cuts, and not hidden behind other geometry.
+const occRay = new THREE.Raycaster();
+function updateLabels() {
+  if (!M) return;
+  const planes = renderer.clippingPlanes;
+  const p = new THREE.Vector3(), dir = new THREE.Vector3();
+  const blockers = M.meshes.filter((m) => {
+    const el = m.userData.el;
+    return el.ifcClass !== 'IfcSpace' && m.userData.base.opacity >= 1 && isShown(el);
+  });
+  for (const el of M.elements) {
+    if (!el.label) continue;
+    el.label.getWorldPosition(p);
+    let show = state.labels && isShown(el) && planes.every((pl) => pl.distanceToPoint(p.clone().setY(p.y - 0.6)) >= 0);
+    if (show && !state.xray) {
+      const dist = camera.position.distanceTo(p);
+      occRay.set(camera.position, dir.subVectors(p, camera.position).normalize());
+      occRay.far = dist - 0.05;
+      show = !occRay.intersectObjects(blockers, false).some((h) => planes.every((pl) => pl.distanceToPoint(h.point) >= -1e-4));
+    }
+    el.label.visible = show;
+  }
+}
+let labelsDirty = true, lastLabelCheck = 0;
+controls.addEventListener('change', () => (labelsDirty = true));
+
+/* ---------- section planes & explode ---------- */
+const planeY = new THREE.Plane(new THREE.Vector3(0, -1, 0), 0);
+const planeX = new THREE.Plane(new THREE.Vector3(-1, 0, 0), 0);
+function applyExplode() {
+  M.storeys.forEach((s, i) => { s.group.position.y = i * state.explode; });
+  M.root.updateMatrixWorld(true);
+  M.box = new THREE.Box3().setFromObject(M.root);
+  $('#explodeOut').textContent = mm(state.explode);
+  applyClip();
+}
+function applyClip() {
+  const b = M.box, planes = [];
+  if (state.planCut < 1) {
+    planeY.constant = b.min.y + (b.max.y - b.min.y) * state.planCut;
+    planes.push(planeY);
+    $('#planCutOut').textContent = '+' + (planeY.constant - M.baseBox.min.y).toFixed(2) + ' m';
+  } else $('#planCutOut').textContent = 'off';
+  if (state.sectCut < 1) {
+    planeX.constant = b.min.x + (b.max.x - b.min.x) * state.sectCut;
+    planes.push(planeX);
+    $('#sectCutOut').textContent = 'x ' + (planeX.constant - b.min.x).toFixed(2) + ' m';
+  } else $('#sectCutOut').textContent = 'off';
+  renderer.clippingPlanes = planes;
+  updateLabels();
+}
+function setPlanCutAt(y) {
+  const b = M.box;
+  state.planCut = Math.min(1, Math.max(0, (y - b.min.y) / (b.max.y - b.min.y)));
+  $('#planCut').value = Math.round(state.planCut * 1000);
+  applyClip();
+}
+$('#planCut').addEventListener('input', (e) => { state.planCut = e.target.value / 1000; applyClip(); });
+$('#sectCut').addEventListener('input', (e) => { state.sectCut = e.target.value / 1000; applyClip(); });
+$('#explode').addEventListener('input', (e) => {
+  const h = M.baseBox.max.y - M.baseBox.min.y;
+  state.explode = (e.target.value / 100) * Math.max(2, h / Math.max(1, M.storeys.length));
+  applyExplode();
+});
+
+/* ---------- camera ---------- */
+let anim = null;
+function flyTo(pos, target, instant) {
+  if (instant || reduceMotion) { camera.position.copy(pos); controls.target.copy(target); controls.update(); return; }
+  anim = { p0: camera.position.clone(), t0: controls.target.clone(), p1: pos, t1: target, start: performance.now(), dur: 480 };
+}
+function fitBox(box, dir, instant) {
+  const c = box.getCenter(new THREE.Vector3());
+  const r = box.getBoundingSphere(new THREE.Sphere()).radius || 1;
+  const fov = THREE.MathUtils.degToRad(camera.fov);
+  const dist = (r / Math.sin(Math.min(fov, fov * camera.aspect) / 2)) * 1.02;
+  dir = (dir || camera.position.clone().sub(controls.target)).normalize();
+  flyTo(c.clone().add(dir.multiplyScalar(dist)), c, instant);
+}
+const VIEWS = { iso: [1, 0.75, 1.1], top: [0, 1, 0.0001], front: [0, 0.12, 1], side: [1, 0.12, 0] };
+function setView(v, instant) {
+  if (!M) return;
+  const box = M.box || new THREE.Box3().setFromObject(M.root);
+  fitBox(box, v === 'fit' ? null : new THREE.Vector3(...VIEWS[v]), instant);
+}
+document.querySelectorAll('[data-view]').forEach((b) => b.addEventListener('click', () => setView(b.dataset.view)));
+
+/* ---------- picking ---------- */
+const ray = new THREE.Raycaster();
+const ndc = new THREE.Vector2();
+function pickAt(cx, cy) {
+  if (!M) return null;
+  const r = renderer.domElement.getBoundingClientRect();
+  ndc.set(((cx - r.left) / r.width) * 2 - 1, -((cy - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  const planes = renderer.clippingPlanes;
+  for (const h of ray.intersectObjects(M.meshes, false)) {
+    const el = h.object.userData.el;
+    if (!isShown(el)) continue;
+    if (!planes.every((p) => p.distanceToPoint(h.point) >= -1e-4)) continue;
+    if (state.xray && el !== state.selected && h.object.userData.base.opacity < 1) continue;
+    return { el, point: h.point };
+  }
+  return null;
+}
+let down = null, hoverQueued = null;
+const canvas = renderer.domElement;
+canvas.addEventListener('pointerdown', (e) => { down = { x: e.clientX, y: e.clientY }; });
+canvas.addEventListener('pointerup', (e) => {
+  if (!down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 5 || e.button !== 0) { down = null; return; }
+  down = null;
+  const hit = pickAt(e.clientX, e.clientY);
+  if (state.measure) { if (hit) addMeasurePoint(hit.point); return; }
+  select(hit ? hit.el : null);
+});
+canvas.addEventListener('dblclick', (e) => {
+  if (state.measure) return;
+  const hit = pickAt(e.clientX, e.clientY);
+  if (hit) { select(hit.el); zoomTo(hit.el); }
+});
+canvas.addEventListener('pointermove', (e) => {
+  if (e.buttons) return;
+  if (hoverQueued) { hoverQueued = [e.clientX, e.clientY]; return; }
+  hoverQueued = [e.clientX, e.clientY];
+  requestAnimationFrame(() => {
+    const hit = pickAt(...hoverQueued);
+    hoverQueued = null;
+    const el = hit ? hit.el : null;
+    if (el !== state.hover) { state.hover = el; applyLook(); }
+    $('#hoverInfo').textContent = el ? `${el.ifcClass} · ${el.name}` : (state.selected ? `Selected: ${state.selected.ifcClass} · ${state.selected.name}` : 'Ready');
+  });
+});
+canvas.addEventListener('pointerleave', () => { if (state.hover) { state.hover = null; applyLook(); } });
+
+function zoomTo(el) {
+  const box = new THREE.Box3().setFromObject(el.object);
+  const size = box.getSize(new THREE.Vector3());
+  box.expandByVector(new THREE.Vector3(1, 1, 1).multiplyScalar(Math.max(1.5, size.length() * 0.6)));
+  fitBox(box);
+}
+
+/* ---------- measuring ---------- */
+const measureGroup = new THREE.Group();
+measureGroup.renderOrder = 999;
+scene.add(measureGroup);
+let mStart = null;
+const dimMat = new THREE.LineBasicMaterial({ color: 0x2b53c2, depthTest: false });
+const dotMat = new THREE.MeshBasicMaterial({ color: 0x2b53c2, depthTest: false });
+const dotGeo = new THREE.SphereGeometry(0.07, 12, 8);
+function addDot(p) { const d = new THREE.Mesh(dotGeo, dotMat); d.position.copy(p); d.renderOrder = 999; measureGroup.add(d); return d; }
+function addMeasurePoint(p) {
+  if (!mStart) { mStart = { p: p.clone(), dot: addDot(p) }; $('#hoverInfo').textContent = 'Pick the second point'; return; }
+  addDot(p);
+  const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([mStart.p, p]), dimMat);
+  line.renderOrder = 999;
+  measureGroup.add(line);
+  const tag = document.createElement('div');
+  tag.className = 'dim-tag';
+  const dy = Math.abs(p.y - mStart.p.y);
+  tag.textContent = mm(p.distanceTo(mStart.p)) + (dy > 0.05 ? `  ↕ ${mm(dy)}` : '');
+  const lbl = new CSS2DObject(tag);
+  lbl.position.copy(mStart.p).add(p).multiplyScalar(0.5);
+  measureGroup.add(lbl);
+  $('#hoverInfo').textContent = 'Distance ' + tag.textContent;
+  mStart = null;
+  $('#btnClearDims').hidden = false;
+}
+function clearMeasures() {
+  for (const o of [...measureGroup.children]) { if (o.isCSS2DObject) o.element.remove(); measureGroup.remove(o); }
+  mStart = null;
+  $('#btnClearDims').hidden = true;
+}
+$('#btnClearDims').addEventListener('click', clearMeasures);
+function setMeasure(on) {
+  state.measure = on;
+  $('#modeSelect').setAttribute('aria-pressed', !on);
+  $('#modeMeasure').setAttribute('aria-pressed', on);
+  stage.classList.toggle('measuring', on);
+  $('#modeHint').textContent = on ? 'Click two points on the model to dimension them · Esc cancels' : 'Drag to orbit · right-drag to pan · scroll to zoom · double-click to zoom to an element';
+  if (!on && mStart) { measureGroup.remove(mStart.dot); mStart = null; }
+  applyLook();
+}
+$('#modeSelect').addEventListener('click', () => setMeasure(false));
+$('#modeMeasure').addEventListener('click', () => setMeasure(true));
+
+/* ---------- toolbar toggles ---------- */
+$('#btnXray').addEventListener('click', (e) => {
+  state.xray = !state.xray;
+  e.currentTarget.setAttribute('aria-pressed', state.xray);
+  updateEdgeLook(); applyLook(); updateLabels();
+});
+$('#btnLabels').addEventListener('click', (e) => {
+  state.labels = !state.labels;
+  e.currentTarget.setAttribute('aria-pressed', state.labels);
+  updateLabels();
+});
+$('#btnShowAll').addEventListener('click', () => {
+  state.isolated = null; state.hiddenClasses.clear();
+  M.elements.forEach((e) => (e.hidden = false));
+  M.storeys.forEach((s) => (s.hidden = false));
+  applyVisibility(); renderChips();
+});
+window.addEventListener('keydown', (e) => {
+  if (e.target.matches('input')) return;
+  if (e.key === 'Escape') { if (mStart) { measureGroup.remove(mStart.dot); mStart = null; } else select(null); }
+  if (e.key === 'f' && state.selected) zoomTo(state.selected);
+  if (e.key === 'h' && state.selected) { state.selected.hidden = true; applyVisibility(); }
+  if (e.key === 'm') setMeasure(!state.measure);
+  if (e.key === 'x') $('#btnXray').click();
+});
+
+/* ---------- model tree ---------- */
+const EYE = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/></svg>';
+const EYE_OFF = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 2l12 12M6.4 3.8A6 6 0 0 1 8 3.5c4 0 6.5 4.5 6.5 4.5a11 11 0 0 1-1.9 2.4M4 5.2A11 11 0 0 0 1.5 8S4 12.5 8 12.5a6 6 0 0 0 2.4-.5"/></svg>';
+const CLASS_SWATCH = { IfcWall: '#d8d2c3', IfcWallStandardCase: '#d8d2c3', IfcSlab: '#b4b9b0', IfcDoor: '#8a6847', IfcWindow: '#8fc6dc', IfcColumn: '#a2a9a1', IfcSpace: '#8fb996', IfcRoof: '#8e958d', IfcBeam: '#9aa39b' };
+
+function classesInModel() {
+  const counts = new Map();
+  for (const el of M.elements) counts.set(el.ifcClass, (counts.get(el.ifcClass) || 0) + 1);
+  return [...counts.entries()].sort((a, b) => b[1] - a[1]);
+}
+function renderChips() {
+  $('#classChips').innerHTML = classesInModel().map(([c, n]) =>
+    `<button class="chip" data-class="${esc(c)}" aria-pressed="${!state.hiddenClasses.has(c)}"><span class="sw" style="background:${CLASS_SWATCH[c] || '#9aa39b'}"></span>${esc(c.replace(/^Ifc/, ''))} ${n}</button>`).join('');
+}
+$('#classChips').addEventListener('click', (e) => {
+  const b = e.target.closest('.chip');
+  if (!b) return;
+  const c = b.dataset.class;
+  state.hiddenClasses.has(c) ? state.hiddenClasses.delete(c) : state.hiddenClasses.add(c);
+  b.setAttribute('aria-pressed', !state.hiddenClasses.has(c));
+  applyVisibility();
+});
+
+function buildTree() {
+  renderChips();
+  const html = M.storeys.map((s) => {
+    const els = M.elements.filter((e) => e.storey === s.index);
+    const byClass = new Map();
+    for (const el of els) { if (!byClass.has(el.ifcClass)) byClass.set(el.ifcClass, []); byClass.get(el.ifcClass).push(el); }
+    const groups = [...byClass.entries()].sort().map(([c, list]) => `
+      <details class="grp" data-class="${esc(c)}">
+        <summary class="cls-sum"><span>${esc(c)}</span><span class="count">${list.length}</span></summary>
+        <div class="el-list">${list.map((el) => `<div class="el-row" role="button" tabindex="0" data-uid="${el.uid}"><span class="nm">${esc(el.name)}</span><button class="eye" data-eye="${el.uid}" aria-label="Hide ${esc(el.name)}">${EYE}</button></div>`).join('')}</div>
+      </details>`).join('');
+    return `<details class="grp" data-storey="${s.index}" ${M.storeys.length <= 4 ? 'open' : ''}>
+      <summary class="storey-sum"><span>${esc(s.name)}</span><span class="count">${els.length}</span><button class="eye" data-seye="${s.index}" aria-label="Hide ${esc(s.name)}">${EYE}</button></summary>
+      ${groups}</details>`;
+  }).join('');
+  $('#tree').innerHTML = html;
+  applyFilter();
+}
+function refreshTreeState() {
+  document.querySelectorAll('[data-seye]').forEach((b) => {
+    const s = M.storeys[b.dataset.seye];
+    b.innerHTML = s.hidden ? EYE_OFF : EYE;
+    b.closest('summary').classList.toggle('off', s.hidden);
+  });
+  document.querySelectorAll('.el-row').forEach((r) => {
+    const el = M.byUid.get(+r.dataset.uid);
+    const shown = isShown(el);
+    r.classList.toggle('off', !shown);
+    r.querySelector('.eye').innerHTML = el.hidden ? EYE_OFF : EYE;
+  });
+}
+$('#tree').addEventListener('click', (e) => {
+  const seye = e.target.closest('[data-seye]');
+  if (seye) {
+    e.preventDefault();
+    const s = M.storeys[seye.dataset.seye];
+    s.hidden = !s.hidden;
+    applyVisibility();
+    return;
+  }
+  const eye = e.target.closest('[data-eye]');
+  if (eye) {
+    const el = M.byUid.get(+eye.dataset.eye);
+    el.hidden = !el.hidden;
+    applyVisibility();
+    return;
+  }
+  const row = e.target.closest('.el-row');
+  if (row) {
+    const el = M.byUid.get(+row.dataset.uid);
+    select(el, true);
+    if (matchMedia('(max-width: 860px)').matches) closePanels();
+  }
+});
+$('#tree').addEventListener('dblclick', (e) => {
+  const row = e.target.closest('.el-row');
+  if (row) zoomTo(M.byUid.get(+row.dataset.uid));
+});
+$('#tree').addEventListener('keydown', (e) => {
+  const row = e.target.closest('.el-row');
+  if (row && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); select(M.byUid.get(+row.dataset.uid), true); }
+});
+function applyFilter() {
+  const q = state.query.trim().toLowerCase();
+  document.querySelectorAll('#tree details[data-class]').forEach((d) => {
+    let any = false;
+    d.querySelectorAll('.el-row').forEach((r) => {
+      const el = M.byUid.get(+r.dataset.uid);
+      const match = !q || el.name.toLowerCase().includes(q) || el.ifcClass.toLowerCase().includes(q) || (el.guid || '').toLowerCase().includes(q);
+      r.hidden = !match;
+      any ||= match;
+    });
+    d.hidden = !any;
+    if (q) d.open = any;
+  });
+  document.querySelectorAll('#tree details[data-storey]').forEach((d) => {
+    d.hidden = !!q && !d.querySelector('details[data-class]:not([hidden])');
+    if (q && !d.hidden) d.open = true;
+  });
+}
+$('#search').addEventListener('input', (e) => { state.query = e.target.value; applyFilter(); });
+
+/* ---------- selection & properties ---------- */
+function select(el, fromTree) {
+  state.selected = el;
+  applyLook();
+  document.querySelectorAll('.el-row.sel').forEach((r) => r.classList.remove('sel'));
+  if (el) {
+    const row = document.querySelector(`.el-row[data-uid="${el.uid}"]`);
+    if (row) {
+      row.classList.add('sel');
+      if (!fromTree) {
+        row.closest('details[data-class]').open = true;
+        row.closest('details[data-storey]').open = true;
+        row.scrollIntoView({ block: 'nearest' });
+      }
+    }
+    $('#hoverInfo').textContent = `Selected: ${el.ifcClass} · ${el.name}`;
+  }
+  renderProps();
+}
+
+const fmt = (v) => (v === true ? 'Yes' : v === false ? 'No' : esc(v));
+function psetHtml(name, rows) {
+  const entries = Object.entries(rows);
+  if (!entries.length) return '';
+  return `<section class="pset"><h3>${esc(name)}</h3><dl>${entries.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${fmt(v)}</dd>`).join('')}</dl></section>`;
+}
+
+function renderProps() {
+  const box = $('#props');
+  const el = state.selected;
+  if (!M) { box.innerHTML = ''; return; }
+  if (!el) {
+    $('#propsTitle').textContent = 'Model summary';
+    let rooms = '';
+    if (M.rooms?.length) {
+      const tot = M.rooms.reduce((a, r) => a + r.area, 0);
+      rooms = `<p class="eyebrow" style="margin-block:14px 6px">Room schedule</p>
+        <table class="sched"><thead><tr><th>Room</th><th>Type</th><th style="text-align:right">Area</th></tr></thead><tbody>
+        ${M.rooms.map((r) => `<tr class="click" data-uid="${r.uid}"><td>${esc(r.name)}</td><td><span class="type-pill"><i style="background:${ROOM_COLORS[r.roomType]}"></i>${esc(r.roomType)}</span></td><td class="num">${r.area.toFixed(1)} m²</td></tr>`).join('')}
+        <tr><td colspan="2"><b>Net usable area</b></td><td class="num"><b>${tot.toFixed(1)} m²</b></td></tr></tbody></table>
+        <p class="hint" style="margin-top:8px">Room types use the same rule as <code>Program.cs</code>: under 10 m² is a store, under 30 m² an office, anything larger a meeting room.</p>`;
+    }
+    box.innerHTML = `<p class="hint">Click an element to read its IFC properties. Double-click to zoom to it. <b>F</b> zooms to the selection, <b>H</b> hides it, <b>M</b> toggles measuring.</p>
+      <dl class="tally" style="margin-top:12px">${classesInModel().map(([c, n]) => `<dt>${esc(c)}</dt><dd>${n}</dd>`).join('')}</dl>${rooms}`;
+    box.querySelectorAll('tr.click').forEach((tr) => tr.addEventListener('click', () => { const r = M.byUid.get(+tr.dataset.uid); select(r); zoomTo(r); }));
+    return;
+  }
+  $('#propsTitle').textContent = 'Properties';
+  const s = M.storeys[el.storey];
+  const head = `<div class="prop-head"><span class="cls-badge">${esc(el.ifcClass)}</span><h2>${esc(el.name)}</h2></div>
+    <div class="guid"><span>GlobalId ${esc(el.guid || '—')}</span>${el.guid ? '<button class="btn small" id="copyGuid">Copy</button>' : ''}</div>
+    <div class="actions">
+      <button class="btn small" id="actZoom">Zoom to</button>
+      <button class="btn small" id="actHide">Hide</button>
+      <button class="btn small" id="actIsolate">Isolate</button>
+      <button class="btn small" id="actIsoStorey">Isolate storey</button>
+    </div>`;
+  const ident = { Storey: s.name, ...(Number.isFinite(s.elevation) ? { Elevation: mm(s.elevation) } : {}), ...(el.material ? { Material: el.material } : {}), ...(el.expressID ? { ExpressID: '#' + el.expressID } : {}) };
+  box.innerHTML = head + psetHtml('Identity', ident) + Object.entries(el.psets || {}).map(([k, v]) => psetHtml(k, v)).join('') + (M.source === 'ifc' ? '<p class="muted" id="psetLoading" style="padding-top:8px">Reading property sets…</p>' : '');
+  $('#actZoom').onclick = () => zoomTo(el);
+  $('#actHide').onclick = () => { el.hidden = true; applyVisibility(); };
+  $('#actIsolate').onclick = () => { state.isolated = new Set([el]); applyVisibility(); zoomTo(el); };
+  $('#actIsoStorey').onclick = () => { state.isolated = new Set(M.elements.filter((e) => e.storey === el.storey)); applyVisibility(); };
+  const cp = $('#copyGuid');
+  if (cp) cp.onclick = () => navigator.clipboard.writeText(el.guid).then(() => toast('GlobalId copied.'), () => {
+    const r = document.createRange(); r.selectNodeContents(box.querySelector('.guid span')); getSelection().removeAllRanges(); getSelection().addRange(r);
+  });
+  if (M.source === 'ifc') loadIfcProps(el);
+}
+
+async function loadIfcProps(el) {
+  const { api } = ifc, id = M.ifcId;
+  let html = '';
+  try {
+    const line = api.GetLine(id, el.expressID, false);
+    const attrs = {};
+    for (const k of ['Name', 'Description', 'ObjectType', 'Tag', 'PredefinedType']) if (line[k]?.value != null) attrs[k] = ifcValue(line[k]);
+    html += psetHtml('Attributes', attrs);
+    const mats = await api.properties.getMaterialsProperties(id, el.expressID, false, true);
+    const matNames = mats.map((m) => m.Name?.value || m.LayerSetName?.value).filter(Boolean);
+    if (matNames.length) html += psetHtml('Material', { Material: matNames.join(', ') });
+    const sets = await api.properties.getPropertySets(id, el.expressID, false, true);
+    for (const set of sets) {
+      const rows = {};
+      for (const h of set.HasProperties || []) {
+        const p = api.GetLine(id, h.value);
+        if (p?.Name) rows[p.Name.value] = ifcValue(p.NominalValue);
+      }
+      for (const h of set.Quantities || []) {
+        const q = api.GetLine(id, h.value);
+        if (q?.Name) rows[q.Name.value] = ifcValue(q.LengthValue ?? q.AreaValue ?? q.VolumeValue ?? q.CountValue ?? q.WeightValue ?? q.TimeValue);
+      }
+      html += psetHtml(set.Name?.value || 'Property set', rows);
+    }
+  } catch (err) {
+    console.error(err);
+    html += '<p class="muted">Some properties could not be read.</p>';
+  }
+  if (state.selected !== el) return;
+  const loading = $('#psetLoading');
+  if (loading) loading.outerHTML = html || '<p class="muted" style="padding-top:8px">No property sets on this element.</p>';
+}
+
+/* ---------- panels (narrow screens) ---------- */
+function closePanels() {
+  ['treePanel', 'propsPanel'].forEach((id) => $('#' + id).classList.remove('open'));
+  $('#btnTree').setAttribute('aria-pressed', false);
+  $('#btnProps').setAttribute('aria-pressed', false);
+}
+function togglePanel(id, btn) {
+  const open = !$('#' + id).classList.contains('open');
+  closePanels();
+  if (open) { $('#' + id).classList.add('open'); btn.setAttribute('aria-pressed', true); }
+}
+$('#btnTree').addEventListener('click', (e) => togglePanel('treePanel', e.currentTarget));
+$('#btnProps').addEventListener('click', (e) => togglePanel('propsPanel', e.currentTarget));
+document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', closePanels));
+
+/* ---------- files ---------- */
+$('#btnOpen').addEventListener('click', () => $('#fileInput').click());
+$('#fileInput').addEventListener('change', (e) => { const f = e.target.files[0]; if (f) loadIfc(f); e.target.value = ''; });
+$('#btnSample').addEventListener('click', () => { buildSample(); toast('Loaded the sample building.'); });
+let dragDepth = 0;
+stage.addEventListener('dragenter', (e) => { e.preventDefault(); dragDepth++; $('#dropHint').hidden = false; });
+stage.addEventListener('dragover', (e) => e.preventDefault());
+stage.addEventListener('dragleave', () => { if (--dragDepth <= 0) { dragDepth = 0; $('#dropHint').hidden = true; } });
+stage.addEventListener('drop', (e) => {
+  e.preventDefault(); dragDepth = 0; $('#dropHint').hidden = true;
+  const f = [...e.dataTransfer.files].find((x) => /\.ifc$/i.test(x.name));
+  if (f) loadIfc(f); else toast('Drop a file with the .ifc extension.', true);
+});
+
+/* ---------- misc UI ---------- */
+let toastTimer;
+function toast(msg, err) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.toggle('err', !!err);
+  t.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => (t.hidden = true), err ? 9000 : 3200);
+}
+function showBusy(text) { $('#busyText').textContent = text; $('#busy').hidden = false; }
+function hideBusy() { $('#busy').hidden = true; }
+const nextFrame = () => new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0)));
+
+/* ---------- loop ---------- */
+function tick(now) {
+  requestAnimationFrame(tick);
+  if (anim) {
+    const t = Math.min(1, (now - anim.start) / anim.dur), k = 1 - Math.pow(1 - t, 3);
+    camera.position.lerpVectors(anim.p0, anim.p1, k);
+    controls.target.lerpVectors(anim.t0, anim.t1, k);
+    if (t >= 1) anim = null;
+  }
+  controls.update();
+  if (labelsDirty && now - lastLabelCheck > 120) { labelsDirty = false; lastLabelCheck = now; updateLabels(); }
+  renderer.render(scene, camera);
+  labelRenderer.render(scene, camera);
+}
+
+applyTheme();
+buildSample();
+requestAnimationFrame(tick);
+</script>
