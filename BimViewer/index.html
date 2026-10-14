@@ -85,6 +85,9 @@ details.grp > summary::before { content: ""; width: 0; height: 0; border-left: 5
 details.grp[open] > summary::before { transform: rotate(90deg); }
 details.grp > summary:hover { background: var(--panel-2); }
 .storey-sum { font-weight: 600; }
+.file-sum { font-weight: 600; font-family: var(--font-display); font-size: 15px; letter-spacing: .02em; }
+.file-sum .sw { width: 10px; height: 10px; border-radius: 2px; flex: none; }
+.file-sum .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .cls-sum { font-family: var(--font-mono); font-size: 12px; color: var(--ink-2); }
 .count { margin-left: auto; font-family: var(--font-mono); font-size: 11px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
 .grp .grp { margin-left: 12px; }
@@ -116,8 +119,22 @@ details.grp > summary:hover { background: var(--panel-2); }
 .seg .btn { border: 0; border-radius: 0; }
 .seg .btn + .btn { border-left: 1px solid var(--line); }
 
-.dock { position: absolute; left: 10px; bottom: 10px; z-index: 2; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; display: grid; gap: 8px; width: 250px; max-width: calc(100% - 20px); }
-.slider { display: grid; grid-template-columns: 72px 1fr 64px; align-items: center; gap: 8px; }
+.dock { position: absolute; left: 10px; bottom: 10px; z-index: 2; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; display: grid; gap: 8px; width: 300px; max-width: calc(100% - 20px); max-height: calc(100% - 64px); overflow: auto; }
+.dock-head { display: flex; align-items: center; gap: 6px; }
+.dock-head .eyebrow { margin-right: auto; }
+.cut-add { display: flex; flex-wrap: wrap; gap: 4px; }
+.cut-list { display: grid; gap: 6px; }
+.cut-empty { margin: 0; font-size: 12px; line-height: 1.4; }
+.cut { border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; display: grid; gap: 4px; background: var(--panel-2); }
+.cut-top { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.cut-top label { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.cut-top input[type="checkbox"] { accent-color: var(--accent); margin: 0; }
+.cut-val { margin-left: auto; font-family: var(--font-mono); font-size: 11px; color: var(--ink-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.cut-tools { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; font-size: 11px; }
+.cut-rot { display: grid; grid-template-columns: 34px 1fr 38px; gap: 2px 6px; align-items: center; font-size: 11px; color: var(--ink-2); }
+.cut-rot output { font-family: var(--font-mono); text-align: right; font-variant-numeric: tabular-nums; }
+.eye[aria-pressed="true"] { color: var(--accent); background: var(--accent-soft); }
+.slider { display: grid; grid-template-columns: 62px 1fr 64px; align-items: center; gap: 8px; }
 .slider label { font-family: var(--font-display); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; font-size: 12px; color: var(--ink-2); }
 .slider output { font-family: var(--font-mono); font-size: 11px; text-align: right; font-variant-numeric: tabular-nums; }
 input[type="range"] { width: 100%; accent-color: var(--accent); }
@@ -194,10 +211,13 @@ table.sched tr.click:hover td { background: var(--panel-2); }
     <button class="btn" id="btnSample" title="Reload the built-in sample building">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 14V6l6-4 6 4v8H2z"/><path d="M6 14V9h4v5"/></svg><span class="label-txt">Sample</span>
     </button>
-    <button class="btn primary" id="btnOpen" title="Open an .ifc file (or drop one on the viewport)">
+    <button class="btn" id="btnOpen" title="Replace the current model with one or more .ifc files">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 11V2M4.5 5.5 8 2l3.5 3.5M2 10v4h12v-4"/></svg><span class="label-txt">Open IFC</span>
     </button>
-    <input type="file" id="fileInput" accept=".ifc" hidden>
+    <button class="btn primary" id="btnAppend" title="Add .ifc files to the current model (or drop them on the viewport)">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 3v10M3 8h10"/></svg><span class="label-txt">Add IFC</span>
+    </button>
+    <input type="file" id="fileInput" accept=".ifc" multiple hidden>
   </div>
 </header>
 
@@ -217,6 +237,7 @@ table.sched tr.click:hover td { background: var(--panel-2); }
       </div>
       <button class="btn" id="btnXray" aria-pressed="false" title="See through everything except the selection">X-ray</button>
       <button class="btn" id="btnLabels" aria-pressed="true">Room tags</button>
+      <button class="btn" id="btnTint" aria-pressed="false" hidden title="Colour each model file differently">Colour by file</button>
       <button class="btn" id="btnShowAll" hidden>Show all</button>
       <button class="btn" id="btnClearDims" hidden>Clear dims</button>
     </div>
@@ -227,9 +248,19 @@ table.sched tr.click:hover td { background: var(--panel-2); }
       <button class="btn small" data-view="side">East</button>
       <button class="btn small" data-view="fit">Fit</button>
     </div>
-    <div class="dock">
-      <div class="slider"><label for="planCut">Plan cut</label><input id="planCut" type="range" min="0" max="1000" value="1000"><output id="planCutOut">off</output></div>
-      <div class="slider"><label for="sectCut">Section</label><input id="sectCut" type="range" min="0" max="1000" value="1000"><output id="sectCutOut">off</output></div>
+    <div class="dock" aria-label="Sectioning">
+      <div class="dock-head"><p class="eyebrow">Section</p>
+        <button class="btn small" id="btnGizmos" aria-pressed="true" title="Show or hide the drag arrows">Arrows</button>
+        <button class="btn small" id="btnClearCuts">Clear</button></div>
+      <div class="cut-add" role="group" aria-label="Add a cut">
+        <button class="btn small" data-add-axis="x" title="Vertical plane across the length">+ X</button>
+        <button class="btn small" data-add-axis="y" title="Horizontal plan cut">+ Y</button>
+        <button class="btn small" data-add-axis="z" title="Vertical plane across the depth">+ Z</button>
+        <button class="btn small" id="addFace" aria-pressed="false" title="Click any surface to cut along it">On surface</button>
+        <button class="btn small" id="addView" title="Cut square to the current view">From view</button>
+        <button class="btn small" id="addBox" title="Six-sided section box">Box</button>
+      </div>
+      <div id="cutList" class="cut-list"></div>
       <div class="slider"><label for="explode">Explode</label><input id="explode" type="range" min="0" max="100" value="0"><output id="explodeOut">0 mm</output></div>
     </div>
     <div class="titleblock" aria-label="Title block">
@@ -242,7 +273,7 @@ table.sched tr.click:hover td { background: var(--panel-2); }
       <div><span class="k">Scale</span><span class="v">NTS</span></div>
     </div>
     <div class="busy" id="busy" hidden><span id="busyText">Loading…</span></div>
-    <div class="drop-hint" id="dropHint" hidden>Drop an .ifc file to open it</div>
+    <div class="drop-hint" id="dropHint" hidden>Drop .ifc files to add them to the model</div>
   </section>
 
   <aside class="panel" id="propsPanel" aria-label="Properties">
@@ -308,6 +339,7 @@ const fill = new THREE.DirectionalLight(0xffffff, 0.55); fill.position.set(-35, 
 
 let grid = null;
 const edgeMat = new THREE.LineBasicMaterial({ color: 0x27302b, transparent: true, opacity: 0.4 });
+const themeHooks = [];
 function applyTheme() {
   scene.background = new THREE.Color(cssVar('--ground'));
   if (grid) { scene.remove(grid); grid.geometry.dispose(); }
@@ -316,6 +348,7 @@ function applyTheme() {
   grid.visible = M ? M.showGrid : true;
   scene.add(grid);
   updateEdgeLook();
+  themeHooks.forEach((f) => f());
 }
 function updateEdgeLook() {
   const dark = new THREE.Color(cssVar('--ground')).getHSL({}).l < 0.4;
@@ -335,6 +368,24 @@ new ResizeObserver(() => {
 }).observe(stage);
 
 /* ---------- materials ---------- */
+const clipPlanes = []; // the active section planes, shared by every model material
+edgeMat.clippingPlanes = clipPlanes;
+themeHooks.push(() => {
+  const dark = new THREE.Color(cssVar('--ground')).getHSL({}).l < 0.4;
+  capUniform.value.set(dark ? '#8e9891' : '#38413c');
+  const a = new THREE.Color(cssVar('--accent'));
+  for (const m of [gizmoMat, gizmoLineMat, planeFillMat]) m.color.copy(a);
+});
+// Cut faces: where a cut opens a solid, its inside (back faces) is drawn flat, like poché on a drawing.
+const capUniform = { value: new THREE.Color('#38413c') };
+function withCaps(m) {
+  m.onBeforeCompile = (sh) => {
+    sh.uniforms.capColor = capUniform;
+    sh.fragmentShader = 'uniform vec3 capColor;\n' + sh.fragmentShader.replace('#include <opaque_fragment>', 'if (!gl_FrontFacing) outgoingLight = capColor;\n#include <opaque_fragment>');
+  };
+  m.customProgramCacheKey = () => 'cap';
+  return m;
+}
 const matCache = new Map();
 function mat(color, opacity = 1) {
   const key = color + '|' + opacity.toFixed(2);
@@ -342,20 +393,21 @@ function mat(color, opacity = 1) {
     matCache.set(key, new THREE.MeshStandardMaterial({
       color, roughness: 0.88, metalness: 0, side: THREE.DoubleSide,
       transparent: opacity < 1, opacity, depthWrite: opacity >= 0.6,
-      polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1,
+      polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1, clippingPlanes: clipPlanes,
     }));
+    if (opacity >= 1) withCaps(matCache.get(key));
   }
   return matCache.get(key);
 }
-const selMat = new THREE.MeshStandardMaterial({ color: 0xe39a2a, emissive: 0xe39a2a, emissiveIntensity: 0.35, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
-const hoverMat = new THREE.MeshStandardMaterial({ color: 0x9db3ef, emissive: 0x2b53c2, emissiveIntensity: 0.2, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
-const xrayMat = new THREE.MeshBasicMaterial({ color: 0x8a948e, transparent: true, opacity: 0.07, depthWrite: false, side: THREE.DoubleSide });
+const selMat = new THREE.MeshStandardMaterial({ color: 0xe39a2a, emissive: 0xe39a2a, emissiveIntensity: 0.35, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1, clippingPlanes: clipPlanes });
+const hoverMat = new THREE.MeshStandardMaterial({ color: 0x9db3ef, emissive: 0x2b53c2, emissiveIntensity: 0.2, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1, clippingPlanes: clipPlanes });
+const xrayMat = new THREE.MeshBasicMaterial({ color: 0x8a948e, transparent: true, opacity: 0.07, depthWrite: false, side: THREE.DoubleSide, clippingPlanes: clipPlanes });
 
 /* ---------- state ---------- */
 let M = null; // current model
 const state = {
   selected: null, hover: null, xray: false, labels: true, measure: false,
-  hiddenClasses: new Set(), isolated: null, explode: 0, planCut: 1, sectCut: 1, query: '',
+  hiddenClasses: new Set(), isolated: null, explode: 0, query: '', gizmos: true, pickFace: false,
 };
 let uidSeq = 0;
 
@@ -367,8 +419,36 @@ function newModel(meta) {
   state.isolated = null;
   state.hiddenClasses = new Set();
   clearMeasures();
-  M = { root, storeys: [], elements: [], meshes: [], byUid: new Map(), showGrid: true, ...meta };
+  if (M) clearCuts();
+  M = { root, files: [], storeys: [], elements: [], meshes: [], byUid: new Map(), showGrid: true, coord: null, ...meta };
   return M;
+}
+// One loaded file (the sample or an .ifc). Several files make one federated model.
+const FILE_COLORS = ['#c9783a', '#3f7fbf', '#5a9e5f', '#a65fae', '#c2a83a', '#4aa3a0', '#b8525a'];
+function addFile(meta) {
+  const group = new THREE.Group();
+  M.root.add(group);
+  const f = { index: M.files.length, group, hidden: false, removed: false, ifcId: null, ...meta };
+  f.color = FILE_COLORS[f.index % FILE_COLORS.length];
+  M.files.push(f);
+  M.curFile = f;
+  return f;
+}
+const liveFiles = () => M.files.filter((f) => !f.removed);
+function removeFile(file) {
+  if (file.ifcId != null && ifc) ifc.api.CloseModel(file.ifcId);
+  file.group.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.isCSS2DObject) o.element.remove(); });
+  file.group.removeFromParent();
+  file.removed = true;
+  M.elements = M.elements.filter((e) => e.file !== file.index);
+  M.meshes = M.meshes.filter((m) => m.userData.el.file !== file.index);
+  for (const [uid, e] of M.byUid) if (e.file === file.index) M.byUid.delete(uid);
+  if (state.selected?.file === file.index) state.selected = null;
+  if (state.hover?.file === file.index) state.hover = null;
+  if (state.isolated) state.isolated = new Set([...state.isolated].filter((e) => e.file !== file.index));
+  if (!liveFiles().length) return buildSample();
+  refreshModel(false);
+  toast(`Removed ${file.name}.`);
 }
 function disposeModel() {
   M.root.traverse((o) => {
@@ -376,19 +456,20 @@ function disposeModel() {
     if (o.isCSS2DObject) o.element.remove();
   });
   scene.remove(M.root);
-  if (M.ifcId != null && ifc) ifc.api.CloseModel(M.ifcId);
+  for (const f of M.files) if (f.ifcId != null && !f.removed && ifc) ifc.api.CloseModel(f.ifcId);
 }
-function addStorey(name, elevation) {
+function addStorey(name, elevation, file = M.curFile) {
   const group = new THREE.Group();
   group.name = name;
-  M.root.add(group);
-  const s = { name, elevation, group, hidden: false, index: M.storeys.length };
+  file.group.add(group);
+  const s = { name, elevation, group, hidden: false, index: M.storeys.length, file: file.index };
   M.storeys.push(s);
   return s;
 }
 function addElement(el, storey, meshes) {
   el.uid = ++uidSeq;
   el.storey = storey.index;
+  el.file = storey.file;
   el.hidden = false;
   el.object = new THREE.Group();
   el.meshes = meshes;
@@ -442,7 +523,8 @@ function placeOnWall(obj, wall, at, y) {
 
 function buildSample() {
   rand = rng(7);
-  newModel({ name: 'Riverside Office Block', schema: 'IFC4', source: 'sample' });
+  newModel({ name: 'Riverside Office Block' });
+  addFile({ name: 'Riverside Office Block', schema: 'IFC4', sample: true });
   const H = 3.2, SLAB = 0.25, EXT = 0.3, COR = 0.2, PT = 0.12, L = 24, D = 14;
   const CS = 6, CN = 8; // corridor between z = 6 and z = 8
   const COLS = [6, 12, 18];
@@ -616,7 +698,7 @@ function buildSample() {
   M.rooms = roomList;
   M.root.position.set(-L / 2, 0, -D / 2);
   finishLoad();
-  setPlanCutAt(H + 1.2); // open on a plan through Level 01
+  addPlane(AXES.y, H + 1.2, 'Plan cut'); // open on a plan through Level 01
 }
 
 /* ---------- IFC loading (web-ifc) ---------- */
@@ -638,17 +720,34 @@ const ifcValue = (v) => {
   return typeof raw === 'object' ? '—' : String(raw);
 };
 
-async function loadIfc(file) {
+// Open .ifc files. With append, they join the current model; the sample is always replaced.
+async function openIfcFiles(list, append) {
+  list = [...list].filter((f) => /\.ifc$/i.test(f.name));
+  if (!list.length) return toast('Choose files with the .ifc extension.', true);
+  if (!M || M.files.every((f) => f.sample || f.removed)) append = false;
+  let opened = 0;
+  for (const f of list) {
+    if (await loadIfc(f, append || opened > 0)) opened++;
+  }
+  if (opened) toast(opened === 1 && !append
+    ? `Opened ${list[0].name}: ${M.elements.length.toLocaleString()} elements.`
+    : `Model now has ${liveFiles().length} files and ${M.elements.length.toLocaleString()} elements.`);
+}
+
+async function loadIfc(file, append) {
   showBusy(`Starting IFC engine…`);
+  let fileRec = null;
   try {
     const { api } = await getIfc();
     showBusy(`Reading ${file.name}…`);
     const data = new Uint8Array(await file.arrayBuffer());
     await nextFrame();
-    newModel({ name: file.name.replace(/\.ifc$/i, ''), source: 'ifc', schema: '' });
-    const id = api.OpenModel(data, { COORDINATE_TO_ORIGIN: true });
-    M.ifcId = id;
-    M.schema = api.GetModelSchema(id);
+    if (!append) newModel({ name: file.name.replace(/\.ifc$/i, '') });
+    // The first file is moved near the origin; later files get the same shift so they stay aligned.
+    const first = !M.coord;
+    const id = api.OpenModel(data, { COORDINATE_TO_ORIGIN: first });
+    const shift = first ? null : M.coord;
+    fileRec = addFile({ name: file.name.replace(/\.ifc$/i, ''), schema: api.GetModelSchema(id), ifcId: id });
 
     const spatial = await api.properties.getSpatialStructure(id, false);
     const storeyNodes = [], storeyOf = new Map();
@@ -701,6 +800,7 @@ async function loadIfc(file) {
         geo.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
         geo.setIndex(new THREE.BufferAttribute(new Uint32Array(idx), 1));
         geo.applyMatrix4(mtx.fromArray(pg.flatTransformation));
+        if (shift) geo.applyMatrix4(shift);
         g.delete();
         tris += idx.length / 3;
         const c = pg.color;
@@ -708,25 +808,33 @@ async function loadIfc(file) {
         entry.meshes.push(new THREE.Mesh(geo, mat(color, entry.el.ifcClass === 'IfcSpace' ? 0.25 : Math.max(0.15, c.w))));
       }
     });
+    // web-ifc works out the origin shift while streaming, so read it afterwards
+    if (first) M.coord = new THREE.Matrix4().fromArray(api.GetCoordinationMatrix(id));
     const edges = tris < 400000;
     for (const { el, storey, meshes } of pending.values()) {
       if (edges) meshes.forEach(withEdges);
       addElement(el, storey, meshes);
     }
-    if (!M.elements.length) throw new Error('This file has no geometry the viewer can draw.');
+    if (!M.elements.some((e) => e.file === fileRec.index)) throw new Error('This file has no geometry the viewer can draw.');
     state.hiddenClasses.add('IfcSpace');
-    const box = new THREE.Box3().setFromObject(M.root);
-    const c = box.getCenter(new THREE.Vector3());
-    M.root.position.set(-c.x, -box.min.y, -c.z);
-    finishLoad();
-    toast(`Opened ${file.name}: ${M.elements.length.toLocaleString()} elements on ${M.storeys.length} storeys.`);
+    if (first) {
+      const box = new THREE.Box3().setFromObject(M.root);
+      const c = box.getCenter(new THREE.Vector3());
+      M.root.position.set(-c.x, -box.min.y, -c.z);
+      finishLoad();
+    } else refreshModel(true);
+    return true;
   } catch (err) {
     console.error(err);
     const offline = /fetch|import|wasm|module|network/i.test(String(err?.message || err));
     toast(offline
       ? `The IFC engine couldn't load. It is fetched from cdn.jsdelivr.net, so this page needs network access to that site. Open BimViewer/index.html from a local web server to read IFC files.`
       : `Couldn't open ${file.name}: ${err.message || err}`, true);
-    if (!M || !M.elements.length) buildSample();
+    if (fileRec && M.files.includes(fileRec) && !fileRec.removed) {
+      if (liveFiles().length > 1) removeFile(fileRec);
+      else buildSample();
+    } else if (!M || !M.elements.length) buildSample();
+    return false;
   } finally {
     hideBusy();
   }
@@ -734,13 +842,22 @@ async function loadIfc(file) {
 
 /* ---------- after load ---------- */
 function finishLoad() {
-  $('#modelName').textContent = M.name;
-  $('#tbProject').textContent = M.name;
-  $('#tbSchema').textContent = M.schema || '—';
+  state.explode = 0;
+  $('#explode').value = 0;
+  refreshModel(false);
+  setView('iso', true);
+}
+// Rebuild everything that depends on which files and elements are loaded.
+function refreshModel(fit) {
+  const files = liveFiles();
+  const title = files.length > 1 ? `${files[0].name} + ${files.length - 1} more` : files[0].name;
+  $('#modelName').textContent = title;
+  $('#tbProject').textContent = title;
+  $('#tbSchema').textContent = [...new Set(files.map((f) => f.schema).filter(Boolean))].join(', ') || '—';
   $('#tbCount').textContent = M.elements.length.toLocaleString();
-  $('#tbStoreys').textContent = M.storeys.length;
-  state.explode = 0; state.planCut = 1; state.sectCut = 1;
-  $('#explode').value = 0; $('#planCut').value = 1000; $('#sectCut').value = 1000;
+  $('#tbStoreys').textContent = M.storeys.filter((s) => !M.files[s.file].removed).length;
+  $('#btnTint').hidden = files.length < 2;
+  if (files.length < 2 && state.tintFiles) { state.tintFiles = false; $('#btnTint').setAttribute('aria-pressed', false); }
   M.root.updateMatrixWorld(true);
   M.baseBox = new THREE.Box3().setFromObject(M.root);
   buildTree();
@@ -748,16 +865,16 @@ function finishLoad() {
   applyLook();
   applyExplode();
   renderProps();
-  setView('iso', true);
+  if (fit) setView('fit');
 }
 
 /* ---------- visibility & look ---------- */
 function isShown(el) {
-  return !el.hidden && !state.hiddenClasses.has(el.ifcClass) && !M.storeys[el.storey].hidden && (!state.isolated || state.isolated.has(el));
+  return !el.hidden && !state.hiddenClasses.has(el.ifcClass) && !M.storeys[el.storey].hidden && !M.files[el.file].hidden && (!state.isolated || state.isolated.has(el));
 }
 function applyVisibility() {
   for (const el of M.elements) el.object.visible = isShown(el);
-  $('#btnShowAll').hidden = !(state.isolated || M.elements.some((e) => e.hidden) || M.storeys.some((s) => s.hidden) || state.hiddenClasses.size);
+  $('#btnShowAll').hidden = !(state.isolated || M.elements.some((e) => e.hidden) || M.storeys.some((s) => s.hidden) || M.files.some((f) => f.hidden) || state.hiddenClasses.size);
   if (state.selected && !isShown(state.selected)) select(null);
   refreshTreeState();
   updateLabels();
@@ -770,6 +887,7 @@ function applyLook() {
       if (el === state.selected) m = selMat;
       else if (el === state.hover && !state.measure) m = hoverMat;
       else if (state.xray) m = xrayMat;
+      else if (state.tintFiles && m.opacity >= 1) m = mat(M.files[el.file].color);
       mesh.material = m;
     }
   }
@@ -778,7 +896,7 @@ function applyLook() {
 const occRay = new THREE.Raycaster();
 function updateLabels() {
   if (!M) return;
-  const planes = renderer.clippingPlanes;
+  const planes = clipPlanes;
   const p = new THREE.Vector3(), dir = new THREE.Vector3();
   const blockers = M.meshes.filter((m) => {
     const el = m.userData.el;
@@ -800,42 +918,21 @@ function updateLabels() {
 let labelsDirty = true, lastLabelCheck = 0;
 controls.addEventListener('change', () => (labelsDirty = true));
 
-/* ---------- section planes & explode ---------- */
-const planeY = new THREE.Plane(new THREE.Vector3(0, -1, 0), 0);
-const planeX = new THREE.Plane(new THREE.Vector3(-1, 0, 0), 0);
+/* ---------- explode ---------- */
 function applyExplode() {
-  M.storeys.forEach((s, i) => { s.group.position.y = i * state.explode; });
+  const key = (s) => (Number.isFinite(s.elevation) ? Math.round(s.elevation * 10) / 10 : Infinity);
+  const levels = [...new Set(M.storeys.map(key))].sort((a, b) => a - b);
+  M.storeys.forEach((s) => { s.group.position.y = levels.indexOf(key(s)) * state.explode; });
   M.root.updateMatrixWorld(true);
   M.box = new THREE.Box3().setFromObject(M.root);
   $('#explodeOut').textContent = mm(state.explode);
-  applyClip();
+  syncCuts(true);
 }
-function applyClip() {
-  const b = M.box, planes = [];
-  if (state.planCut < 1) {
-    planeY.constant = b.min.y + (b.max.y - b.min.y) * state.planCut;
-    planes.push(planeY);
-    $('#planCutOut').textContent = '+' + (planeY.constant - M.baseBox.min.y).toFixed(2) + ' m';
-  } else $('#planCutOut').textContent = 'off';
-  if (state.sectCut < 1) {
-    planeX.constant = b.min.x + (b.max.x - b.min.x) * state.sectCut;
-    planes.push(planeX);
-    $('#sectCutOut').textContent = 'x ' + (planeX.constant - b.min.x).toFixed(2) + ' m';
-  } else $('#sectCutOut').textContent = 'off';
-  renderer.clippingPlanes = planes;
-  updateLabels();
-}
-function setPlanCutAt(y) {
-  const b = M.box;
-  state.planCut = Math.min(1, Math.max(0, (y - b.min.y) / (b.max.y - b.min.y)));
-  $('#planCut').value = Math.round(state.planCut * 1000);
-  applyClip();
-}
-$('#planCut').addEventListener('input', (e) => { state.planCut = e.target.value / 1000; applyClip(); });
-$('#sectCut').addEventListener('input', (e) => { state.sectCut = e.target.value / 1000; applyClip(); });
+
 $('#explode').addEventListener('input', (e) => {
   const h = M.baseBox.max.y - M.baseBox.min.y;
-  state.explode = (e.target.value / 100) * Math.max(2, h / Math.max(1, M.storeys.length));
+  const levels = new Set(M.storeys.map((s) => s.elevation)).size;
+  state.explode = (e.target.value / 100) * Math.max(2, h / Math.max(1, levels));
   applyExplode();
 });
 
@@ -869,13 +966,15 @@ function pickAt(cx, cy) {
   const r = renderer.domElement.getBoundingClientRect();
   ndc.set(((cx - r.left) / r.width) * 2 - 1, -((cy - r.top) / r.height) * 2 + 1);
   ray.setFromCamera(ndc, camera);
-  const planes = renderer.clippingPlanes;
+  const planes = clipPlanes;
   for (const h of ray.intersectObjects(M.meshes, false)) {
     const el = h.object.userData.el;
     if (!isShown(el)) continue;
     if (!planes.every((p) => p.distanceToPoint(h.point) >= -1e-4)) continue;
     if (state.xray && el !== state.selected && h.object.userData.base.opacity < 1) continue;
-    return { el, point: h.point };
+    const normal = h.face.normal.clone().transformDirection(h.object.matrixWorld);
+    if (normal.dot(ray.ray.direction) > 0) normal.negate();
+    return { el, point: h.point, normal };
   }
   return null;
 }
@@ -886,11 +985,12 @@ canvas.addEventListener('pointerup', (e) => {
   if (!down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 5 || e.button !== 0) { down = null; return; }
   down = null;
   const hit = pickAt(e.clientX, e.clientY);
+  if (state.pickFace) { if (hit) addPlaneOnSurface(hit); return; }
   if (state.measure) { if (hit) addMeasurePoint(hit.point); return; }
   select(hit ? hit.el : null);
 });
 canvas.addEventListener('dblclick', (e) => {
-  if (state.measure) return;
+  if (state.measure || state.pickFace) return;
   const hit = pickAt(e.clientX, e.clientY);
   if (hit) { select(hit.el); zoomTo(hit.el); }
 });
@@ -914,6 +1014,340 @@ function zoomTo(el) {
   box.expandByVector(new THREE.Vector3(1, 1, 1).multiplyScalar(Math.max(1.5, size.length() * 0.6)));
   fitBox(box);
 }
+
+/* ---------- sectioning ---------- */
+// Every cut is one or more faces. A face keeps the geometry where d·p <= s and removes the rest,
+// so d points at the side that gets cut away and its arrow handle points the same way.
+renderer.localClippingEnabled = true;
+const cuts = [];
+let cutSeq = 0;
+const AXES = { x: new THREE.Vector3(1, 0, 0), y: new THREE.Vector3(0, 1, 0), z: new THREE.Vector3(0, 0, 1) };
+const gizmos = new THREE.Group();
+scene.add(gizmos);
+const gizmoMat = new THREE.MeshBasicMaterial({ color: 0x2b53c2, depthTest: false, transparent: true });
+const gizmoHotMat = new THREE.MeshBasicMaterial({ color: 0xe39a2a, depthTest: false, transparent: true });
+const gizmoLineMat = new THREE.LineBasicMaterial({ color: 0x2b53c2, depthTest: false, transparent: true, opacity: 0.9 });
+const planeFillMat = new THREE.MeshBasicMaterial({ color: 0x2b53c2, transparent: true, opacity: 0.08, side: THREE.DoubleSide, depthWrite: false });
+const arrowGeo = mergeGeometries([
+  new THREE.CylinderGeometry(0.06, 0.06, 1, 10).translate(0, 0.5, 0),
+  new THREE.ConeGeometry(0.2, 0.45, 16).translate(0, 1.2, 0),
+  new THREE.SphereGeometry(0.16, 14, 10),
+]);
+const unitBoxEdges = new THREE.EdgesGeometry(new THREE.BoxGeometry(1, 1, 1));
+const unitSquare = new THREE.BufferGeometry().setFromPoints([[-.5, -.5], [.5, -.5], [.5, .5], [-.5, .5]].map(([x, y]) => new THREE.Vector3(x, y, 0)));
+
+const dirFromAngles = (az, el) => new THREE.Vector3(Math.cos(el) * Math.cos(az), Math.sin(el), Math.cos(el) * Math.sin(az));
+const anglesFromDir = (d) => ({ az: Math.atan2(d.z, d.x), el: Math.asin(THREE.MathUtils.clamp(d.y, -1, 1)) });
+const deg = (r) => Math.round(THREE.MathUtils.radToDeg(r));
+function snapAxis(d) {
+  for (const a of Object.values(AXES)) {
+    const k = d.dot(a);
+    if (Math.abs(k) > 0.995) return a.clone().multiplyScalar(Math.sign(k));
+  }
+  return d.clone().normalize();
+}
+function axisName(d) {
+  for (const [n, a] of Object.entries(AXES)) if (Math.abs(Math.abs(d.dot(a)) - 1) < 1e-6) return n;
+  return null;
+}
+function makeFace(owner, d, s) {
+  const handle = new THREE.Mesh(arrowGeo, gizmoMat);
+  handle.renderOrder = 1000;
+  handle.userData.face = null;
+  const face = { owner, d: d.clone().normalize(), s, plane: new THREE.Plane(), handle };
+  handle.userData.face = face;
+  gizmos.add(handle);
+  return face;
+}
+// Range of s that still touches the model, with a little margin either side.
+function faceRange(d) {
+  const b = M.box, pad = 0.25;
+  let lo = Infinity, hi = -Infinity;
+  for (let i = 0; i < 8; i++) {
+    const v = d.dot(new THREE.Vector3(i & 1 ? b.max.x : b.min.x, i & 2 ? b.max.y : b.min.y, i & 4 ? b.max.z : b.min.z));
+    lo = Math.min(lo, v); hi = Math.max(hi, v);
+  }
+  return [lo - pad, hi + pad];
+}
+const modelCenter = () => M.box.getCenter(new THREE.Vector3());
+const modelSize = () => Math.max(1, M.box.getSize(new THREE.Vector3()).length());
+
+function addPlane(d, s, name, anchor) {
+  d = d.clone().normalize();
+  const cut = { id: ++cutSeq, kind: 'plane', name: name || 'Plane', on: true };
+  cut.faces = [makeFace(cut, d, s ?? d.dot(anchor || modelCenter()))];
+  cut.fill = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), planeFillMat);
+  cut.outline = new THREE.LineLoop(unitSquare, gizmoLineMat);
+  cut.fill.raycast = cut.outline.raycast = () => {};
+  cut.outline.renderOrder = 999;
+  gizmos.add(cut.fill, cut.outline);
+  cuts.push(cut);
+  syncCuts(true);
+  return cut;
+}
+function addBox(box) {
+  removeCut(cuts.find((c) => c.kind === 'box'));
+  box = box || M.box.clone().expandByScalar(0.1);
+  const cut = { id: ++cutSeq, kind: 'box', name: 'Section box', on: true };
+  cut.faces = [
+    makeFace(cut, AXES.x, box.max.x), makeFace(cut, AXES.x.clone().negate(), -box.min.x),
+    makeFace(cut, AXES.y, box.max.y), makeFace(cut, AXES.y.clone().negate(), -box.min.y),
+    makeFace(cut, AXES.z, box.max.z), makeFace(cut, AXES.z.clone().negate(), -box.min.z),
+  ];
+  cut.outline = new THREE.LineSegments(unitBoxEdges, gizmoLineMat);
+  cut.outline.raycast = () => {};
+  cut.outline.renderOrder = 999;
+  gizmos.add(cut.outline);
+  cuts.push(cut);
+  syncCuts(true);
+  return cut;
+}
+function boxOf(cut) {
+  const [px, nx, py, ny, pz, nz] = cut.faces.map((f) => f.s);
+  return new THREE.Box3(new THREE.Vector3(-nx, -ny, -nz), new THREE.Vector3(px, py, pz));
+}
+function removeCut(cut) {
+  if (!cut) return;
+  for (const f of cut.faces) gizmos.remove(f.handle);
+  if (cut.fill) gizmos.remove(cut.fill);
+  if (cut.outline) gizmos.remove(cut.outline);
+  cuts.splice(cuts.indexOf(cut), 1);
+  syncCuts(true);
+}
+function clearCuts() { while (cuts.length) removeCut(cuts[0]); }
+
+// Push cut state into the clip planes shared by every model material, then move the gizmos.
+function syncCuts(rebuildList) {
+  clipPlanes.length = 0;
+  if (!M) return;
+  const size = modelSize(), scale = size * 0.045, q = new THREE.Quaternion();
+  for (const cut of cuts) {
+    for (const f of cut.faces) {
+      f.plane.normal.copy(f.d).negate();
+      f.plane.constant = f.s;
+      if (cut.on) clipPlanes.push(f.plane);
+    }
+    const show = cut.on && state.gizmos;
+    const center = cut.kind === 'box' ? boxOf(cut).getCenter(new THREE.Vector3()) : modelCenter();
+    for (const f of cut.faces) {
+      const at = center.clone().addScaledVector(f.d, f.s - f.d.dot(center));
+      f.handle.position.copy(at);
+      f.handle.quaternion.setFromUnitVectors(AXES.y, f.d);
+      f.handle.scale.setScalar(scale);
+      f.handle.visible = show;
+    }
+    if (cut.kind === 'plane') {
+      const f = cut.faces[0];
+      q.setFromUnitVectors(AXES.z, f.d);
+      for (const o of [cut.fill, cut.outline]) {
+        o.position.copy(f.handle.position);
+        o.quaternion.copy(q);
+        o.scale.setScalar(size * 0.6);
+        o.visible = show;
+      }
+    } else {
+      const b = boxOf(cut);
+      cut.outline.position.copy(b.getCenter(new THREE.Vector3()));
+      cut.outline.scale.copy(b.getSize(new THREE.Vector3())).max(new THREE.Vector3(1e-3, 1e-3, 1e-3));
+      cut.outline.visible = cut.on;
+    }
+  }
+  updateLabels();
+  if (rebuildList) renderCutList(); else refreshCutRows();
+}
+
+/* section panel */
+const ROT_ICON = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M13 8a5 5 0 1 1-1.5-3.6M13 2.5v2.5h-2.5"/></svg>';
+function cutPosition(f) {
+  const ax = axisName(f.d);
+  if (!ax) return (f.s - faceRange(f.d)[0]).toFixed(2) + ' m';
+  const v = f.s * f.d.dot(AXES[ax]) - M.baseBox.min[ax];
+  return `${ax} ${v.toFixed(2)} m`;
+}
+function renderCutList() {
+  const list = $('#cutList');
+  if (!cuts.length) {
+    list.innerHTML = '<p class="muted cut-empty">No cuts yet. Add a plane on an axis, click any surface, cut along your view, or add a section box.</p>';
+    return;
+  }
+  list.innerHTML = cuts.map((c) => {
+    if (c.kind === 'box') {
+      return `<div class="cut" data-id="${c.id}">
+        <div class="cut-top"><input type="checkbox" id="cut-on-${c.id}" ${c.on ? 'checked' : ''}><label for="cut-on-${c.id}">${esc(c.name)}</label>
+          <span class="cut-val" data-val></span>
+          <button class="eye" data-act="del" aria-label="Remove section box">✕</button></div>
+        <div class="cut-tools"><button class="btn small" data-act="box-model">Fit model</button><button class="btn small" data-act="box-sel">Fit selection</button><span class="muted">Drag the arrows to resize</span></div>
+      </div>`;
+    }
+    const f = c.faces[0], { az, el } = anglesFromDir(f.d);
+    return `<div class="cut" data-id="${c.id}">
+      <div class="cut-top"><input type="checkbox" id="cut-on-${c.id}" ${c.on ? 'checked' : ''}><label for="cut-on-${c.id}">${esc(c.name)}</label>
+        <span class="cut-val" data-val></span>
+        <button class="eye" data-act="flip" title="Cut the other side" aria-label="Flip ${esc(c.name)}">⇄</button>
+        <button class="eye" data-act="rot" title="Rotate" aria-label="Rotate ${esc(c.name)}" aria-pressed="${!!c.rotOpen}">${ROT_ICON}</button>
+        <button class="eye" data-act="del" aria-label="Remove ${esc(c.name)}">✕</button></div>
+      <input type="range" id="cut-s-${c.id}" data-act="s" min="0" max="1000" aria-label="Position of ${esc(c.name)}">
+      <div class="cut-rot" ${c.rotOpen ? '' : 'hidden'}>
+        <label for="cut-az-${c.id}">Turn</label><input type="range" id="cut-az-${c.id}" data-act="az" min="-180" max="180" value="${deg(az)}"><output data-az>${deg(az)}°</output>
+        <label for="cut-el-${c.id}">Tilt</label><input type="range" id="cut-el-${c.id}" data-act="el" min="-90" max="90" value="${deg(el)}"><output data-el>${deg(el)}°</output>
+      </div>
+    </div>`;
+  }).join('');
+  refreshCutRows();
+}
+function refreshCutRows() {
+  for (const c of cuts) {
+    const row = document.querySelector(`.cut[data-id="${c.id}"]`);
+    if (!row) continue;
+    if (c.kind === 'box') {
+      const s = boxOf(c).getSize(new THREE.Vector3());
+      row.querySelector('[data-val]').textContent = `${s.x.toFixed(1)} × ${s.z.toFixed(1)} × ${s.y.toFixed(1)} m`;
+      continue;
+    }
+    const f = c.faces[0], [lo, hi] = faceRange(f.d);
+    row.querySelector('[data-val]').textContent = cutPosition(f);
+    const r = row.querySelector('[data-act="s"]');
+    if (document.activeElement !== r) r.value = Math.round(((f.s - lo) / (hi - lo)) * 1000);
+  }
+}
+$('#cutList').addEventListener('input', (e) => {
+  const row = e.target.closest('.cut');
+  if (!row) return;
+  const c = cuts.find((x) => x.id === +row.dataset.id);
+  const act = e.target.dataset.act;
+  if (e.target.type === 'checkbox') { c.on = e.target.checked; syncCuts(); return; }
+  const f = c.faces[0];
+  if (act === 's') {
+    const [lo, hi] = faceRange(f.d);
+    f.s = lo + (e.target.value / 1000) * (hi - lo);
+  } else if (act === 'az' || act === 'el') {
+    // rotate about the point where the plane crosses the model's centre line
+    const pivot = f.handle.position.clone();
+    const az = THREE.MathUtils.degToRad(+row.querySelector('[data-act="az"]').value);
+    const el = THREE.MathUtils.degToRad(+row.querySelector('[data-act="el"]').value);
+    f.d.copy(snapAxis(dirFromAngles(az, el)));
+    f.s = f.d.dot(pivot);
+    row.querySelector('[data-az]').textContent = deg(az) + '°';
+    row.querySelector('[data-el]').textContent = deg(el) + '°';
+  }
+  syncCuts();
+});
+$('#cutList').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-act]');
+  if (!btn) return;
+  const c = cuts.find((x) => x.id === +btn.closest('.cut').dataset.id);
+  const act = btn.dataset.act;
+  if (act === 'del') return removeCut(c);
+  if (act === 'flip') { const f = c.faces[0]; f.d.negate(); f.s = -f.s; syncCuts(true); }
+  if (act === 'rot') { c.rotOpen = !c.rotOpen; renderCutList(); }
+  if (act === 'box-model') { removeCut(c); addBox(); }
+  if (act === 'box-sel') {
+    if (!state.selected) return toast('Select an element first, then fit the box to it.');
+    sectionBoxAround(state.selected);
+  }
+});
+function sectionBoxAround(el) {
+  const b = new THREE.Box3().setFromObject(el.object).expandByScalar(0.6);
+  addBox(b);
+  zoomTo(el);
+}
+document.querySelectorAll('[data-add-axis]').forEach((b) => b.addEventListener('click', () => {
+  const ax = b.dataset.addAxis;
+  addPlane(AXES[ax], null, `Plane ${ax.toUpperCase()}`);
+}));
+$('#addView').addEventListener('click', () => {
+  // cut away the half of the model nearest the camera, square to the line of sight
+  const d = snapAxis(camera.position.clone().sub(controls.target));
+  addPlane(d, null, 'View cut', controls.target);
+});
+$('#addBox').addEventListener('click', () => addBox());
+$('#addFace').addEventListener('click', () => setPickFace(!state.pickFace));
+$('#btnGizmos').addEventListener('click', (e) => {
+  state.gizmos = !state.gizmos;
+  e.currentTarget.setAttribute('aria-pressed', state.gizmos);
+  syncCuts();
+});
+$('#btnClearCuts').addEventListener('click', clearCuts);
+function setPickFace(on) {
+  state.pickFace = on;
+  if (on) setMeasure(false);
+  $('#addFace').setAttribute('aria-pressed', on);
+  stage.classList.toggle('measuring', on || state.measure);
+  $('#modeHint').textContent = on ? 'Click any surface to put a section plane on it · Esc cancels' : 'Drag to orbit · right-drag to pan · scroll to zoom · double-click to zoom to an element';
+}
+function addPlaneOnSurface(hit) {
+  const d = snapAxis(hit.normal);
+  const label = hit.el ? `Cut at ${hit.el.name}` : 'Surface cut';
+  addPlane(d, d.dot(hit.point) + 0.002, label);
+  setPickFace(false);
+  toast('Plane placed on the surface. Drag its arrow, or use the slider, to cut deeper.');
+}
+
+/* dragging the arrow handles */
+let drag = null;
+const tmpV = new THREE.Vector3();
+function rayFromEvent(e) {
+  const r = canvas.getBoundingClientRect();
+  ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  return ray.ray;
+}
+// Parameter t along the line p + t·d that comes closest to the ray.
+function closestOnLine(p, d, r) {
+  const w = tmpV.subVectors(p, r.origin);
+  const b = d.dot(r.direction), dd = d.dot(w), e = r.direction.dot(w);
+  const den = 1 - b * b;
+  if (den < 1e-4) return null;
+  return (b * e - dd) / den;
+}
+function handleAt(e) {
+  if (!state.gizmos || !cuts.length) return null;
+  rayFromEvent(e);
+  const handles = cuts.filter((c) => c.on).flatMap((c) => c.faces.map((f) => f.handle));
+  const hit = ray.intersectObjects(handles, false)[0];
+  return hit ? hit.object.userData.face : null;
+}
+canvas.addEventListener('pointerdown', (e) => {
+  if (e.button !== 0) return;
+  const f = handleAt(e);
+  if (!f) return;
+  e.stopImmediatePropagation();
+  controls.enabled = false;
+  canvas.setPointerCapture(e.pointerId);
+  const origin = f.handle.position.clone();
+  drag = { f, origin, s0: f.s, t0: closestOnLine(origin, f.d, rayFromEvent(e)) ?? 0 };
+  f.handle.material = gizmoHotMat;
+}, { capture: true });
+canvas.addEventListener('pointermove', (e) => {
+  if (drag) {
+    const t = closestOnLine(drag.origin, drag.f.d, rayFromEvent(e));
+    if (t == null) return;
+    const [lo, hi] = faceRange(drag.f.d);
+    let s = THREE.MathUtils.clamp(drag.s0 + t - drag.t0, lo, hi);
+    if (drag.f.owner.kind === 'box') {
+      // keep the box at least 10 cm thick
+      const i = drag.f.owner.faces.indexOf(drag.f), opp = drag.f.owner.faces[i ^ 1];
+      s = Math.max(s, -opp.s + 0.1);
+    }
+    drag.f.s = s;
+    syncCuts();
+    $('#hoverInfo').textContent = `${drag.f.owner.name} · ${cutPosition(drag.f)}`;
+    return;
+  }
+  if (e.buttons) return;
+  const f = handleAt(e);
+  canvas.style.cursor = f ? 'grab' : '';
+  for (const c of cuts) for (const x of c.faces) x.handle.material = x === f ? gizmoHotMat : gizmoMat;
+}, { capture: true });
+canvas.addEventListener('pointerup', (e) => {
+  if (!drag) return;
+  e.stopImmediatePropagation();
+  drag.f.handle.material = gizmoMat;
+  drag = null;
+  down = null;
+  controls.enabled = true;
+  canvas.releasePointerCapture(e.pointerId);
+}, { capture: true });
 
 /* ---------- measuring ---------- */
 const measureGroup = new THREE.Group();
@@ -949,6 +1383,7 @@ function clearMeasures() {
 $('#btnClearDims').addEventListener('click', clearMeasures);
 function setMeasure(on) {
   state.measure = on;
+  if (on && state.pickFace) setPickFace(false);
   $('#modeSelect').setAttribute('aria-pressed', !on);
   $('#modeMeasure').setAttribute('aria-pressed', on);
   stage.classList.toggle('measuring', on);
@@ -974,10 +1409,12 @@ $('#btnShowAll').addEventListener('click', () => {
   state.isolated = null; state.hiddenClasses.clear();
   M.elements.forEach((e) => (e.hidden = false));
   M.storeys.forEach((s) => (s.hidden = false));
+  M.files.forEach((f) => (f.hidden = false));
   applyVisibility(); renderChips();
 });
 window.addEventListener('keydown', (e) => {
   if (e.target.matches('input')) return;
+  if (e.key === 'Escape' && state.pickFace) { setPickFace(false); return; }
   if (e.key === 'Escape') { if (mStart) { measureGroup.remove(mStart.dot); mStart = null; } else select(null); }
   if (e.key === 'f' && state.selected) zoomTo(state.selected);
   if (e.key === 'h' && state.selected) { state.selected.hidden = true; applyVisibility(); }
@@ -1010,7 +1447,7 @@ $('#classChips').addEventListener('click', (e) => {
 
 function buildTree() {
   renderChips();
-  const html = M.storeys.map((s) => {
+  const storeyHtml = (s) => {
     const els = M.elements.filter((e) => e.storey === s.index);
     const byClass = new Map();
     for (const el of els) { if (!byClass.has(el.ifcClass)) byClass.set(el.ifcClass, []); byClass.get(el.ifcClass).push(el); }
@@ -1022,11 +1459,25 @@ function buildTree() {
     return `<details class="grp" data-storey="${s.index}" ${M.storeys.length <= 4 ? 'open' : ''}>
       <summary class="storey-sum"><span>${esc(s.name)}</span><span class="count">${els.length}</span><button class="eye" data-seye="${s.index}" aria-label="Hide ${esc(s.name)}">${EYE}</button></summary>
       ${groups}</details>`;
+  };
+  const files = liveFiles();
+  $('#tree').innerHTML = files.map((f) => {
+    const storeys = M.storeys.filter((s) => s.file === f.index);
+    const count = M.elements.filter((e) => e.file === f.index).length;
+    return `<details class="grp" data-file="${f.index}" open>
+      <summary class="file-sum">${files.length > 1 ? `<span class="sw" style="background:${f.color}"></span>` : ''}<span class="nm" title="${esc(f.name)}">${esc(f.name)}</span><span class="count">${esc(f.schema || '')} · ${count}</span>
+        <button class="eye" data-feye="${f.index}" aria-label="Hide ${esc(f.name)}">${EYE}</button>
+        ${f.sample ? '' : `<button class="eye" data-fdel="${f.index}" aria-label="Remove ${esc(f.name)} from the model" title="Remove file">✕</button>`}</summary>
+      ${storeys.map(storeyHtml).join('')}</details>`;
   }).join('');
-  $('#tree').innerHTML = html;
   applyFilter();
 }
 function refreshTreeState() {
+  document.querySelectorAll('[data-feye]').forEach((b) => {
+    const f = M.files[b.dataset.feye];
+    b.innerHTML = f.hidden ? EYE_OFF : EYE;
+    b.closest('summary').classList.toggle('off', f.hidden);
+  });
   document.querySelectorAll('[data-seye]').forEach((b) => {
     const s = M.storeys[b.dataset.seye];
     b.innerHTML = s.hidden ? EYE_OFF : EYE;
@@ -1040,6 +1491,20 @@ function refreshTreeState() {
   });
 }
 $('#tree').addEventListener('click', (e) => {
+  const feye = e.target.closest('[data-feye]');
+  if (feye) {
+    e.preventDefault();
+    const f = M.files[feye.dataset.feye];
+    f.hidden = !f.hidden;
+    applyVisibility();
+    return;
+  }
+  const fdel = e.target.closest('[data-fdel]');
+  if (fdel) {
+    e.preventDefault();
+    removeFile(M.files[fdel.dataset.fdel]);
+    return;
+  }
   const seye = e.target.closest('[data-seye]');
   if (seye) {
     e.preventDefault();
@@ -1132,7 +1597,7 @@ function renderProps() {
         <tr><td colspan="2"><b>Net usable area</b></td><td class="num"><b>${tot.toFixed(1)} m²</b></td></tr></tbody></table>
         <p class="hint" style="margin-top:8px">Room types use the same rule as <code>Program.cs</code>: under 10 m² is a store, under 30 m² an office, anything larger a meeting room.</p>`;
     }
-    box.innerHTML = `<p class="hint">Click an element to read its IFC properties. Double-click to zoom to it. <b>F</b> zooms to the selection, <b>H</b> hides it, <b>M</b> toggles measuring.</p>
+    box.innerHTML = `<p class="hint">Click an element to read its IFC properties. Double-click to zoom to it. <b>F</b> zooms to the selection, <b>H</b> hides it, <b>M</b> toggles measuring. Use the Section panel to cut the model in any direction.</p>
       <dl class="tally" style="margin-top:12px">${classesInModel().map(([c, n]) => `<dt>${esc(c)}</dt><dd>${n}</dd>`).join('')}</dl>${rooms}`;
     box.querySelectorAll('tr.click').forEach((tr) => tr.addEventListener('click', () => { const r = M.byUid.get(+tr.dataset.uid); select(r); zoomTo(r); }));
     return;
@@ -1146,22 +1611,24 @@ function renderProps() {
       <button class="btn small" id="actHide">Hide</button>
       <button class="btn small" id="actIsolate">Isolate</button>
       <button class="btn small" id="actIsoStorey">Isolate storey</button>
+      <button class="btn small" id="actBox">Section box</button>
     </div>`;
-  const ident = { Storey: s.name, ...(Number.isFinite(s.elevation) ? { Elevation: mm(s.elevation) } : {}), ...(el.material ? { Material: el.material } : {}), ...(el.expressID ? { ExpressID: '#' + el.expressID } : {}) };
-  box.innerHTML = head + psetHtml('Identity', ident) + Object.entries(el.psets || {}).map(([k, v]) => psetHtml(k, v)).join('') + (M.source === 'ifc' ? '<p class="muted" id="psetLoading" style="padding-top:8px">Reading property sets…</p>' : '');
+  const ident = { ...(liveFiles().length > 1 ? { Model: M.files[el.file].name } : {}), Storey: s.name, ...(Number.isFinite(s.elevation) ? { Elevation: mm(s.elevation) } : {}), ...(el.material ? { Material: el.material } : {}), ...(el.expressID ? { ExpressID: '#' + el.expressID } : {}) };
+  box.innerHTML = head + psetHtml('Identity', ident) + Object.entries(el.psets || {}).map(([k, v]) => psetHtml(k, v)).join('') + (M.files[el.file].ifcId != null ? '<p class="muted" id="psetLoading" style="padding-top:8px">Reading property sets…</p>' : '');
   $('#actZoom').onclick = () => zoomTo(el);
   $('#actHide').onclick = () => { el.hidden = true; applyVisibility(); };
   $('#actIsolate').onclick = () => { state.isolated = new Set([el]); applyVisibility(); zoomTo(el); };
+  $('#actBox').onclick = () => sectionBoxAround(el);
   $('#actIsoStorey').onclick = () => { state.isolated = new Set(M.elements.filter((e) => e.storey === el.storey)); applyVisibility(); };
   const cp = $('#copyGuid');
   if (cp) cp.onclick = () => navigator.clipboard.writeText(el.guid).then(() => toast('GlobalId copied.'), () => {
     const r = document.createRange(); r.selectNodeContents(box.querySelector('.guid span')); getSelection().removeAllRanges(); getSelection().addRange(r);
   });
-  if (M.source === 'ifc') loadIfcProps(el);
+  if (M.files[el.file].ifcId != null) loadIfcProps(el);
 }
 
 async function loadIfcProps(el) {
-  const { api } = ifc, id = M.ifcId;
+  const { api } = ifc, id = M.files[el.file].ifcId;
   let html = '';
   try {
     const line = api.GetLine(id, el.expressID, false);
@@ -1209,8 +1676,19 @@ $('#btnProps').addEventListener('click', (e) => togglePanel('propsPanel', e.curr
 document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', closePanels));
 
 /* ---------- files ---------- */
-$('#btnOpen').addEventListener('click', () => $('#fileInput').click());
-$('#fileInput').addEventListener('change', (e) => { const f = e.target.files[0]; if (f) loadIfc(f); e.target.value = ''; });
+let appendNext = false;
+$('#btnOpen').addEventListener('click', () => { appendNext = false; $('#fileInput').click(); });
+$('#btnAppend').addEventListener('click', () => { appendNext = true; $('#fileInput').click(); });
+$('#fileInput').addEventListener('change', (e) => {
+  const files = [...e.target.files];
+  e.target.value = '';
+  if (files.length) openIfcFiles(files, appendNext);
+});
+$('#btnTint').addEventListener('click', (e) => {
+  state.tintFiles = !state.tintFiles;
+  e.currentTarget.setAttribute('aria-pressed', state.tintFiles);
+  applyLook();
+});
 $('#btnSample').addEventListener('click', () => { buildSample(); toast('Loaded the sample building.'); });
 let dragDepth = 0;
 stage.addEventListener('dragenter', (e) => { e.preventDefault(); dragDepth++; $('#dropHint').hidden = false; });
@@ -1218,8 +1696,7 @@ stage.addEventListener('dragover', (e) => e.preventDefault());
 stage.addEventListener('dragleave', () => { if (--dragDepth <= 0) { dragDepth = 0; $('#dropHint').hidden = true; } });
 stage.addEventListener('drop', (e) => {
   e.preventDefault(); dragDepth = 0; $('#dropHint').hidden = true;
-  const f = [...e.dataTransfer.files].find((x) => /\.ifc$/i.test(x.name));
-  if (f) loadIfc(f); else toast('Drop a file with the .ifc extension.', true);
+  openIfcFiles(e.dataTransfer.files, true);
 });
 
 /* ---------- misc UI ---------- */

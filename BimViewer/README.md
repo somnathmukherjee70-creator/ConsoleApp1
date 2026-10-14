@@ -11,7 +11,8 @@ python3 -m http.server 8000   # or: npx serve .
 ```
 
 Then open http://localhost:8000. The page opens on a built-in sample building (Riverside Office Block).
-Use **Open IFC** or drag an `.ifc` file onto the viewport to load your own model (IFC2X3 / IFC4).
+Use **Open IFC** to replace the model with your own `.ifc` files (IFC2X3 / IFC4), or **Add IFC**
+(or drag files onto the viewport) to merge more files into the current model.
 Libraries are loaded from cdn.jsdelivr.net, so the browser needs internet access.
 
 ## Features
@@ -22,7 +23,18 @@ Libraries are loaded from cdn.jsdelivr.net, so the browser needs internet access
 - IFC class filter chips (e.g. hide all windows)
 - Properties panel: GlobalId, storey, material, property sets and quantity sets
 - Hide, isolate element, isolate storey, show all
-- X-ray mode, plan cut (horizontal section), vertical section, exploded storeys
+- **Merge files**: load architecture, structure, MEP… as one federated model. Every file after the
+  first gets the same origin shift, so they stay aligned. Each file appears in the tree, where you can
+  hide or remove it, and **Colour by file** tints each discipline.
+- **Sectioning in any direction**:
+  - `+ X` / `+ Y` / `+ Z`: planes on the main axes
+  - **On surface**: click any face to put a plane on it
+  - **From view**: cut square to your line of sight
+  - **Box**: a six-sided section box (or **Section box** around the selected element)
+  - Drag the arrows in 3D, or use each cut's slider; rotate a plane to any angle with Turn and Tilt;
+    flip it to cut the other side; stack as many cuts as you like
+  - Cut faces are filled solid, like poché on a drawing
+- X-ray mode and exploded storeys
 - Two-point measuring tool (distance and height difference in mm)
 - Room tags and a room schedule; room types use the same rule as `ConsoleApp1/Program.cs`
   (< 10 m² Store, < 30 m² Office, otherwise Meeting room)
