@@ -59,8 +59,11 @@ Libraries are loaded from cdn.jsdelivr.net, so the browser needs internet access
   bounding-box sweep, so typical models finish in seconds. Each clash is framed close up with its two
   elements in red and blue, has a status (New, Active, Reviewed, Approved, Resolved) and a comment,
   and shows as a pin in 3D. Running a test again keeps statuses and marks fixed clashes Resolved.
-  Export a PDF clash report with a picture of every clash, a CSV, or BCF 2.1 for Revit, Navisworks,
-  BIMcollab and Solibri
+  Download a PDF clash report (a real PDF file with a close-up picture of every clash), a CSV, or
+  BCF 2.1 for Revit, Navisworks, BIMcollab and Solibri
+- **Snapshots**: the camera button (or `S`) saves a high-resolution image of the view with a small title
+  block. Download it as PNG, copy it to the clipboard, rename it, jump back to its view, or save all
+  snapshots as a PDF sheet. Snapshots are also added to the model report
 - **Model check**: one click scores the model out of 100 and lists 14 kinds of common IFC problems
   (duplicate or missing GlobalIds, duplicate elements, misaligned files, proxies, missing storeys,
   properties, materials, names and sizes, tiny geometry, empty storeys). Click an issue to zoom to it,

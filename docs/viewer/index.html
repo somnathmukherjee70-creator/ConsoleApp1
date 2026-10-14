@@ -124,7 +124,7 @@ details.grp > summary:hover { background: var(--panel-2); }
 .stage { position: relative; min-height: 0; min-width: 0; border: 1px solid var(--line); border-radius: 2px; background: var(--ground); overflow: hidden; touch-action: none; }
 .stage canvas { display: block; }
 .stage.measuring canvas { cursor: crosshair; }
-.labels { position: absolute; inset: 0; pointer-events: none; }
+.labels { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
 .room-tag { font-size: 11px; line-height: 1.25; text-align: center; color: #1b221f; background: rgb(255 255 255 / .82); padding: 3px 6px; border-radius: 3px; white-space: nowrap; box-shadow: 0 0 0 1px rgb(0 0 0 / .08); }
 .room-tag b { display: block; font-weight: 600; }
 .room-tag span { font-family: var(--font-mono); font-size: 10px; color: #4b544f; }
@@ -300,6 +300,30 @@ table.sched tr.click:hover td { background: var(--panel-2); }
 @media (prefers-reduced-motion: no-preference) { .clash-pin.on { animation: pinPulse 1.6s ease-out infinite; } }
 @keyframes pinPulse { 0% { box-shadow: 0 0 0 1px rgb(0 0 0 / .3), 0 0 0 0 color-mix(in srgb, var(--pin) 55%, transparent); } 100% { box-shadow: 0 0 0 1px rgb(0 0 0 / .3), 0 0 0 14px transparent; } }
 
+/* snapshots */
+.ov-tl .btn svg { width: 15px; height: 15px; }
+.snap-flash { position: absolute; inset: 0; background: #fff; z-index: 8; pointer-events: none; animation: snapFlash .45s ease-out forwards; }
+@keyframes snapFlash { from { opacity: .85; } to { opacity: 0; } }
+.snap-tray { position: absolute; top: 52px; left: 10px; z-index: 4; width: 340px; max-width: calc(100% - 20px); max-height: calc(100% - 70px); overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 14px 40px rgb(0 0 0 / .18); padding: 10px; }
+.snap-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.snap-head b { font: 600 15px var(--font-display); text-transform: uppercase; letter-spacing: .06em; }
+.snap-head #snapPdf { margin-left: auto; }
+.snap-grid { display: grid; gap: 10px; }
+.snap { margin: 0; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--panel-2); display: grid; }
+.snap-img { border: 0; padding: 0; background: none; cursor: pointer; line-height: 0; }
+.snap-img img { width: 100%; height: auto; display: block; }
+.snap figcaption { display: grid; gap: 2px; padding: 6px 8px 0; min-width: 0; }
+.snap figcaption input { border: 1px solid transparent; background: none; font-weight: 600; padding: 2px 4px; margin-left: -4px; border-radius: 4px; min-width: 0; }
+.snap figcaption input:hover, .snap figcaption input:focus { border-color: var(--line); background: var(--panel); }
+.snap figcaption span { font-size: 11px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.snap-acts { display: flex; gap: 4px; padding: 6px 8px 8px; align-items: center; }
+.snap-acts .eye { margin-left: auto; }
+.snap-toast { position: absolute; left: 50%; top: 56px; transform: translateX(-50%); z-index: 6; display: flex; align-items: center; gap: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 12px 30px rgb(0 0 0 / .18); padding: 8px 10px; max-width: calc(100% - 20px); }
+.snap-toast img { width: 72px; height: auto; border-radius: 4px; border: 1px solid var(--line); }
+.snap-toast div { display: grid; min-width: 0; margin-right: 4px; }
+.snap-toast span { font-size: 11px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+@media (max-width: 640px) { .snap-toast { flex-wrap: wrap; } .snap-toast [data-st="all"] { display: none; } }
+
 /* status bar */
 .status { display: flex; gap: 16px; padding-block: 7px; font-size: 12px; color: var(--ink-2); min-width: 0; }
 .status span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -381,6 +405,10 @@ table.sched tr.click:hover td { background: var(--panel-2); }
       <button class="btn" id="btnXray" aria-pressed="false" title="See through everything except the selection">X-ray</button>
       <button class="btn" id="btnLabels" aria-pressed="true">Room tags</button>
       <button class="btn" id="btnTint" aria-pressed="false" hidden title="Colour each model file differently">Colour by file</button>
+      <button class="btn" id="btnSnap" title="Take a snapshot of the view (S)">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 5.5h2.5L6 3.5h4l1.5 2H14v7.5H2z"/><circle cx="8" cy="9" r="2.4"/></svg>Snapshot</button>
+      <button class="btn" id="btnSnaps" hidden aria-pressed="false" title="Show snapshots">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="3" width="5" height="4"/><rect x="9" y="3" width="5" height="4"/><rect x="2" y="9" width="5" height="4"/><rect x="9" y="9" width="5" height="4"/></svg><span id="snapCount">0</span></button>
       <button class="btn" id="btnShowAll" hidden>Show all</button>
       <button class="btn" id="btnClearDims" hidden>Clear dims</button>
     </div>
@@ -415,6 +443,8 @@ table.sched tr.click:hover td { background: var(--panel-2); }
       <div><span class="k">Units</span><span class="v">mm · m²</span></div>
       <div><span class="k">Scale</span><span class="v">NTS</span></div>
     </div>
+    <div class="snap-tray" id="snapTray" hidden></div>
+    <div class="snap-toast" id="snapToast" hidden role="status"></div>
     <div class="busy" id="busy" hidden><span id="busyText">Loading…</span></div>
     <div class="drop-hint" id="dropHint" hidden>Drop .ifc files to add them to the model</div>
   </section>
@@ -1977,6 +2007,10 @@ async function openPrintReport() {
   .bar { display: flex; gap: 8px; margin-bottom: 16px; }
   .bar button { font: inherit; padding: 6px 12px; border: 1px solid #2b53c2; background: #2b53c2; color: #fff; border-radius: 5px; cursor: pointer; }
   footer { margin-top: 26px; color: #57615b; font-size: 9pt; border-top: 1px solid #ccd3ca; padding-top: 6px; }
+  .snaps { display: grid; gap: 14px; }
+  .snaps figure { margin: 0; break-inside: avoid; }
+  .snaps img { margin-top: 0; }
+  .snaps figcaption { font-size: 9pt; color: #57615b; margin-top: 4px; }
   @media print { .bar { display: none; } body { padding: 0; } }
 </style></head><body>
 <div class="bar"><button onclick="print()">Print or save as PDF</button></div>
@@ -2002,6 +2036,8 @@ ${rooms.map((r) => `<tr><td>${esc(r.name)}</td><td>${esc(r.storey)}</td><td>${es
 <tr><td colspan="3"><b>Total</b></td><td class="n"><b>${rooms.reduce((a, r) => a + (r.area || 0), 0).toFixed(2)}</b></td></tr>
 </tbody></table>
 <p class="note">Room types: under 10 m² Store, under 30 m² Office, otherwise Meeting room.</p>` : ''}
+${snaps.length ? `<h2>Snapshots</h2>
+<div class="snaps">${snaps.map((s) => `<figure><img src="${s.jpg}" alt="${esc(s.name)}"><figcaption><b>${esc(s.name)}</b> · ${esc(s.view)}</figcaption></figure>`).join('')}</div>` : ''}
 <footer>Made with Sightline IFC Viewer. The model was read in the browser and never uploaded.</footer>
 </body></html>`;
   if (win) {
@@ -2470,7 +2506,7 @@ function filteredClashes() {
   const r = clash.test?.results || [];
   return clash.filter === 'All' ? r : r.filter((c) => c.status === clash.filter);
 }
-function focusClash(c, instant, quiet) {
+function focusClash(c, instant, quiet, dir) {
   clash.focus = c;
   state.clashFocus = c;
   state.selected = null;
@@ -2490,7 +2526,7 @@ function focusClash(c, instant, quiet) {
     if (old?.name === 'Clash box') removeCut(old);
     restoreCuts();
   }
-  fitBox(zone.clone().expandByScalar(pad * 0.8), null, instant);
+  fitBox(zone.clone().expandByScalar(pad * 0.8), dir || null, instant);
   updatePins();
   if (quiet) return;
   renderProps();
@@ -2701,15 +2737,22 @@ function clashExportFailed(err) {
 
 /* exports */
 // Snapshot of each clash, made by visiting it with the box view on. Restores the current clash after.
-async function captureClashes(list, width, type) {
+// With `aspect` (height / width) the camera is reframed to that shape so pictures fill their slot.
+async function captureClashes(list, width, type, aspect) {
   const keep = clash.focus, keepBox = clash.boxView;
   clash.boxView = true;
+  const sw = stage.clientWidth, sh = stage.clientHeight;
+  if (aspect) {
+    renderer.setSize(sw, Math.round(sw * aspect));
+    camera.aspect = 1 / aspect;
+    camera.updateProjectionMatrix();
+  }
   const out = new Map();
   const cv = document.createElement('canvas');
   const ctx2 = cv.getContext('2d');
   for (let i = 0; i < list.length; i++) {
     showBusy(`Taking pictures of clashes… ${i + 1} of ${list.length}`);
-    focusClash(list[i], true, true);
+    focusClash(list[i], true, true, new THREE.Vector3(1, 0.7, 1.15));
     controls.update();
     for (const c of list) if (c.pin) c.pin.visible = false;
     gizmos.visible = false;
@@ -2723,6 +2766,11 @@ async function captureClashes(list, width, type) {
     await nextFrame();
   }
   clash.boxView = keepBox;
+  if (aspect) {
+    renderer.setSize(sw, sh);
+    camera.aspect = sw / sh;
+    camera.updateProjectionMatrix();
+  }
   if (keep) focusClash(keep, true); else updatePins();
   hideBusy();
   return out;
@@ -2746,95 +2794,6 @@ function ifcPoint(v, isDir) {
     if (M.coord) p.applyMatrix4(M.coord.clone().invert());
   }
   return [p.x, -p.z, p.y];
-}
-
-async function clashReportPdf() {
-  const win = window.open('', '_blank');
-  const t = clash.test;
-  const list = t.results;
-  const LIMIT = 60;
-  const shots = await captureClashes(list.slice(0, LIMIT), 720, 'image/jpeg');
-  const counts = CLASH_STATUS.map((s) => [s, list.filter((c) => c.status === s.id).length]);
-  const by = (fn) => { const m = new Map(); for (const c of list) m.set(fn(c), (m.get(fn(c)) || 0) + 1); return [...m.entries()].sort((a, b) => b[1] - a[1]); };
-  const pairsTbl = by((c) => [c.a.ifcClass, c.b.ifcClass].sort().join(' × '));
-  const storeyTbl = by((c) => c.storey);
-  const files = liveFiles();
-  const date = t.ranAt.toLocaleString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-  const selTxt = (s) => `${s.file === 'all' ? 'All files' : esc(M.files[+s.file].name)} · ${s.classes.size ? [...s.classes].map(esc).join(', ') : 'all classes'}`;
-  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Clash report · ${esc(t.name)}</title>
-<style>
-  @page { size: A4; margin: 14mm; }
-  :root { --ink: #16201b; --ink2: #5a655e; --line: #d5dbd3; --accent: #2b53c2; }
-  body { font: 10pt/1.45 "IBM Plex Sans", system-ui, sans-serif; color: var(--ink); margin: 0 auto; max-width: 190mm; padding: 16px; }
-  .bar { display: flex; gap: 8px; margin-bottom: 18px; }
-  .bar button { font: inherit; padding: 7px 14px; border: 0; background: var(--accent); color: #fff; border-radius: 5px; cursor: pointer; }
-  .cover { border: 2px solid var(--ink); padding: 22px 24px; display: grid; gap: 14px; }
-  .eyebrow { font: 600 9pt "Barlow Condensed", "Arial Narrow", sans-serif; letter-spacing: .16em; text-transform: uppercase; color: var(--ink2); }
-  h1 { font: 700 30pt/1 "Barlow Condensed", "Arial Narrow", sans-serif; text-transform: uppercase; margin: 0; }
-  h2 { font: 600 13pt "Barlow Condensed", "Arial Narrow", sans-serif; text-transform: uppercase; letter-spacing: .08em; margin: 24px 0 8px; border-bottom: 1.5px solid var(--ink); padding-bottom: 3px; }
-  .kpis { display: grid; grid-template-columns: 1.4fr repeat(5, 1fr); border: 1px solid var(--line); }
-  .kpis div { padding: 8px 10px; border-right: 1px solid var(--line); }
-  .kpis div:last-child { border-right: 0; }
-  .kpis b { display: block; font: 700 22pt/1 "Barlow Condensed", "Arial Narrow", sans-serif; font-variant-numeric: tabular-nums; }
-  .kpis span { font-size: 8.5pt; color: var(--ink2); display: flex; align-items: center; gap: 5px; }
-  .kpis i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
-  table { width: 100%; border-collapse: collapse; font-size: 9pt; }
-  th { text-align: left; font-weight: 600; border-bottom: 1px solid var(--ink); padding: 4px 6px; }
-  td { border-bottom: 1px solid var(--line); padding: 3px 6px; vertical-align: top; }
-  .n { text-align: right; font-variant-numeric: tabular-nums; font-family: "IBM Plex Mono", ui-monospace, monospace; }
-  .rules td:first-child { color: var(--ink2); width: 32%; }
-  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .card { border: 1px solid var(--line); break-inside: avoid; display: grid; }
-  .card img { width: 100%; display: block; border-bottom: 1px solid var(--line); }
-  .card .body { padding: 8px 10px; display: grid; gap: 4px; }
-  .card .head { display: flex; align-items: center; gap: 8px; }
-  .card .id { font: 700 14pt "Barlow Condensed", "Arial Narrow", sans-serif; }
-  .pill { font-size: 8pt; font-weight: 600; color: #fff; padding: 1px 7px; border-radius: 999px; }
-  .card .d { margin-left: auto; font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 9pt; }
-  .el { display: flex; gap: 6px; align-items: baseline; font-size: 9pt; }
-  .tag { font: 700 8pt "IBM Plex Mono", monospace; color: #fff; padding: 0 5px; border-radius: 3px; }
-  .meta { color: var(--ink2); font-size: 8.5pt; }
-  .note { background: #f4f6f2; border-left: 3px solid var(--accent); padding: 4px 8px; font-size: 9pt; }
-  footer { margin-top: 24px; color: var(--ink2); font-size: 8.5pt; border-top: 1px solid var(--line); padding-top: 6px; }
-  @media print { .bar { display: none; } body { padding: 0; } h2 { break-after: avoid; } }
-</style></head><body>
-<div class="bar"><button onclick="print()">Print or save as PDF</button></div>
-<section class="cover">
-  <div class="eyebrow">Clash report · ${esc(date)}</div>
-  <h1>${esc(t.name)}</h1>
-  <div class="kpis">
-    <div><b>${list.filter((c) => c.status !== 'Resolved').length}</b><span>open clashes of ${list.length}</span></div>
-    ${counts.map(([s, n]) => `<div><b>${n}</b><span><i style="background:${s.color}"></i>${s.id}</span></div>`).join('')}
-  </div>
-  <table class="rules"><tbody>
-    <tr><td>Models</td><td>${files.map((f) => `${esc(f.name)} <span class="meta">(${esc(f.schema || '—')})</span>`).join(', ')}</td></tr>
-    <tr><td>Selection A</td><td>${selTxt(t.cfg.a)}</td></tr>
-    <tr><td>Selection B</td><td>${selTxt(t.cfg.b)}</td></tr>
-    <tr><td>Rule</td><td>${t.cfg.type === 'hard' ? `Hard clash, overlaps up to ${t.cfg.tolerance} mm ignored` : `Clearance, closer than ${t.cfg.clearance} mm`}${t.cfg.skipSameClass ? ' · same class skipped' : ''}${t.cfg.skipSameFile ? ' · same file skipped' : ''}</td></tr>
-    <tr><td>Checked</td><td>${t.pairs.toLocaleString()} close pairs among ${t.candidates.toLocaleString()} elements in ${(t.ms / 1000).toFixed(1)} s</td></tr>
-  </tbody></table>
-</section>
-<div class="two">
-  <div><h2>By element type</h2><table><thead><tr><th>A × B</th><th class="n">Clashes</th></tr></thead><tbody>${pairsTbl.map(([k, n]) => `<tr><td>${esc(k)}</td><td class="n">${n}</td></tr>`).join('')}</tbody></table></div>
-  <div><h2>By storey</h2><table><thead><tr><th>Storey</th><th class="n">Clashes</th></tr></thead><tbody>${storeyTbl.map(([k, n]) => `<tr><td>${esc(k)}</td><td class="n">${n}</td></tr>`).join('')}</tbody></table></div>
-</div>
-<h2>Clashes</h2>
-<div class="cards">${list.slice(0, LIMIT).map((c) => `<article class="card">
-  ${shots.get(c) ? `<img src="${shots.get(c)}" alt="View of clash ${esc(c.id)}">` : ''}
-  <div class="body">
-    <div class="head"><span class="id">${esc(c.id)}</span><span class="pill" style="background:${statusColor(c.status)}">${c.status}</span><span class="d">${c.kind === 'Hard' ? 'overlap zone ' : 'gap '}${mm(c.dist)}</span></div>
-    <div class="el"><span class="tag" style="background:#e5533d">A</span><span><b>${esc(c.a.name)}</b> <span class="meta">${esc(c.a.ifcClass)} · ${esc(c.a.guid || '')}</span></span></div>
-    <div class="el"><span class="tag" style="background:#2f7fd8">B</span><span><b>${esc(c.b.name)}</b> <span class="meta">${esc(c.b.ifcClass)} · ${esc(c.b.guid || '')}</span></span></div>
-    <div class="meta">${esc(c.storey)} · ${c.kind} · x ${ifcPoint(c.point).map((v) => v.toFixed(2)).join(', ')} m</div>
-    ${c.comment ? `<div class="note">${esc(c.comment)}</div>` : ''}
-  </div></article>`).join('')}</div>
-${list.length > LIMIT ? `<h2>More clashes</h2><table><thead><tr><th>ID</th><th>Status</th><th>A</th><th>B</th><th>Storey</th><th class="n">mm</th></tr></thead><tbody>
-${list.slice(LIMIT).map((c) => `<tr><td>${esc(c.id)}</td><td>${c.status}</td><td>${esc(c.a.name)}</td><td>${esc(c.b.name)}</td><td>${esc(c.storey)}</td><td class="n">${Math.round(c.dist * 1000)}</td></tr>`).join('')}</tbody></table>` : ''}
-<footer>Made with Sightline IFC Viewer. Models were read in the browser and never uploaded. For hard clashes, the overlap zone is the smallest side of the box where the two elements overlap. It shows how big the conflict is, not exactly how deep one element goes into the other.</footer>
-</body></html>`;
-  if (win) { win.document.open(); win.document.write(html); win.document.close(); win.focus(); }
-  else { downloadFile(clashFileName('html'), html, 'text/html'); toast('Your browser blocked the report window, so it was downloaded instead. Open it and print to PDF.'); }
 }
 
 function loadScript(src) {
@@ -2905,6 +2864,321 @@ window.addEventListener('keydown', (e) => {
   if (e.key === ']') stepClash(1);
   if (e.key === '[') stepClash(-1);
 });
+
+/* ---------- PDF helpers (jsPDF) ---------- */
+async function getPdf() {
+  if (!window.jspdf) await loadScript('https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js');
+  return window.jspdf.jsPDF;
+}
+// jsPDF's built-in fonts only cover Latin-1, so swap the few symbols we use for safe ones.
+const pdfText = (s) => String(s ?? '').replace(/≈/g, '~').replace(/[–—]/g, '-').replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/…/g, '...').replace(/[^\x20-\xFF\n]/g, '?');
+const hexRgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+function pdfFooter(doc, label) {
+  const n = doc.getNumberOfPages();
+  for (let i = 1; i <= n; i++) {
+    doc.setPage(i);
+    const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight();
+    doc.setDrawColor(205, 212, 202); doc.setLineWidth(0.2); doc.line(14, H - 12, W - 14, H - 12);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(95, 104, 98);
+    doc.text(pdfText(`Sightline IFC Viewer · ${label}`), 14, H - 7.5);
+    doc.text(`Page ${i} of ${n}`, W - 14, H - 7.5, { align: 'right' });
+  }
+}
+function pdfFit(doc, s, w) {
+  s = pdfText(s);
+  if (doc.getTextWidth(s) <= w) return s;
+  while (s.length > 1 && doc.getTextWidth(s + '...') > w) s = s.slice(0, -1);
+  return s + '...';
+}
+
+/* clash report as a real PDF file */
+async function clashReportPdf() {
+  const t = clash.test;
+  const jsPDF = await getPdf();
+  const list = t.results;
+  const LIMIT = 60;
+  const imgH = 88;
+  const shots = await captureClashes(list.slice(0, LIMIT), 1200, 'image/jpeg', imgH / (210 - 28));
+  showBusy('Writing the PDF…');
+  await nextFrame();
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const W = 210, L = 14, R = W - 14, CW = R - L;
+  const ink = [22, 32, 27], ink2 = [90, 101, 94], line = [213, 219, 211];
+  const files = liveFiles();
+  const date = t.ranAt.toLocaleString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const text = (s, x, y, o = {}) => { doc.setFont('helvetica', o.bold ? 'bold' : 'normal'); doc.setFontSize(o.size || 9); doc.setTextColor(...(o.color || ink)); doc.text(o.w ? pdfFit(doc, s, o.w) : pdfText(s), x, y, o.align ? { align: o.align } : undefined); };
+
+  // cover
+  doc.setDrawColor(...ink); doc.setLineWidth(0.6); doc.rect(L, 14, CW, 92);
+  text(`CLASH REPORT  ·  ${date.toUpperCase()}`, L + 7, 24, { size: 8, color: ink2, bold: true });
+  text(t.name.toUpperCase(), L + 7, 37, { size: 24, bold: true, w: CW - 14 });
+  const open = list.filter((c) => c.status !== 'Resolved').length;
+  const kpis = [['Open', open, null], ...CLASH_STATUS.map((s) => [s.id, list.filter((c) => c.status === s.id).length, s.color])];
+  const kw = (CW - 14) / kpis.length;
+  kpis.forEach(([label, n, color], i) => {
+    const x = L + 7 + i * kw;
+    doc.setDrawColor(...line); doc.setLineWidth(0.2); doc.rect(x, 44, kw, 18);
+    text(String(n), x + 3, 54, { size: 16, bold: true });
+    if (color) { doc.setFillColor(...hexRgb(color)); doc.rect(x + 3, 57.2, 2.2, 2.2, 'F'); }
+    text(i === 0 ? `of ${list.length} clashes` : label, x + (color ? 6.5 : 3), 59, { size: 7, color: ink2 });
+  });
+  const sel = (s) => `${s.file === 'all' ? 'All files' : M.files[+s.file].name} · ${s.classes.size ? [...s.classes].join(', ') : 'all classes'}`;
+  const rules = [
+    ['Models', files.map((f) => `${f.name} (${f.schema || '-'})`).join(', ')],
+    ['Selection A', sel(t.cfg.a)], ['Selection B', sel(t.cfg.b)],
+    ['Rule', (t.cfg.type === 'hard' ? `Hard clash, overlaps up to ${t.cfg.tolerance} mm ignored` : `Clearance, closer than ${t.cfg.clearance} mm`) + (t.cfg.skipSameClass ? ' · same class skipped' : '') + (t.cfg.skipSameFile ? ' · same file skipped' : '')],
+    ['Checked', `${t.pairs.toLocaleString()} close pairs among ${t.candidates.toLocaleString()} elements in ${(t.ms / 1000).toFixed(1)} s`],
+  ];
+  rules.forEach(([k, v], i) => {
+    const y = 70 + i * 7;
+    text(k, L + 7, y, { size: 8.5, color: ink2 });
+    text(v, L + 40, y, { size: 8.5, w: CW - 47 });
+    doc.setDrawColor(...line); doc.line(L + 7, y + 2.2, R - 7, y + 2.2);
+  });
+  // breakdown tables
+  const by = (fn) => { const m = new Map(); for (const c of list) m.set(fn(c), (m.get(fn(c)) || 0) + 1); return [...m.entries()].sort((a, b) => b[1] - a[1]); };
+  const table = (title, rows, x, w, y0) => {
+    text(title.toUpperCase(), x, y0, { size: 10, bold: true });
+    doc.setDrawColor(...ink); doc.setLineWidth(0.5); doc.line(x, y0 + 2, x + w, y0 + 2);
+    rows.slice(0, 14).forEach(([k, n], i) => {
+      const y = y0 + 8 + i * 6;
+      text(k, x, y, { size: 8.5, w: w - 16 });
+      text(String(n), x + w, y, { size: 8.5, align: 'right' });
+      doc.setDrawColor(...line); doc.setLineWidth(0.2); doc.line(x, y + 2, x + w, y + 2);
+    });
+  };
+  table('By element type', by((c) => [c.a.ifcClass, c.b.ifcClass].sort().join(' × ')), L, CW / 2 - 5, 118);
+  table('By storey', by((c) => c.storey), L + CW / 2 + 5, CW / 2 - 5, 118);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(...ink2);
+  doc.text(doc.splitTextToSize('For hard clashes, the overlap zone is the smallest side of the box where the two elements overlap. It shows how big the conflict is, not exactly how deep one element goes into the other.', CW), L, 214);
+
+  // clash pages: two per page
+  const blockH = 132;
+  list.slice(0, LIMIT).forEach((c, i) => {
+    if (i % 2 === 0) doc.addPage();
+    const y = 16 + (i % 2) * (blockH + 2);
+    const img = shots.get(c);
+    if (img) { doc.addImage(img, 'JPEG', L, y, CW, imgH, undefined, 'FAST'); doc.setDrawColor(...line); doc.setLineWidth(0.2); doc.rect(L, y, CW, imgH); }
+    let yy = y + imgH + 9;
+    text(c.id, L, yy, { size: 15, bold: true });
+    const sc = hexRgb(statusColor(c.status));
+    doc.setFillColor(...sc); doc.roundedRect(L + 24, yy - 4.6, doc.getTextWidth(c.status) * 0.62 + 8, 6, 3, 3, 'F');
+    text(c.status, L + 28, yy - 0.3, { size: 8, bold: true, color: [255, 255, 255] });
+    text(`${c.kind === 'Hard' ? 'Overlap zone' : 'Gap'} ${Math.round(c.dist * 1000)} mm  ·  ${c.kind}  ·  ${c.storey}`, R, yy, { size: 8.5, color: ink2, align: 'right' });
+    [[c.a, 'A', [229, 83, 61]], [c.b, 'B', [47, 127, 216]]].forEach(([el, tag, col], k) => {
+      const ry = yy + 7 + k * 6.5;
+      doc.setFillColor(...col); doc.roundedRect(L, ry - 3.6, 5, 4.6, 0.8, 0.8, 'F');
+      text(tag, L + 2.5, ry - 0.2, { size: 7.5, bold: true, color: [255, 255, 255], align: 'center' });
+      text(el.name, L + 7, ry, { size: 9, bold: true, w: 80 });
+      text(`${el.ifcClass}${files.length > 1 ? ' · ' + M.files[el.file].name : ''} · ${el.guid || ''}`, L + 90, ry, { size: 8, color: ink2, w: CW - 90 });
+    });
+    const p = ifcPoint(c.point).map((v) => v.toFixed(2)).join(', ');
+    text(`Location x, y, z: ${p} m`, L, yy + 21, { size: 8, color: ink2 });
+    if (c.comment) {
+      const lines = doc.splitTextToSize(pdfText(c.comment), CW - 8).slice(0, 2);
+      doc.setFillColor(244, 246, 242); doc.rect(L, yy + 24, CW, 5 + lines.length * 4, 'F');
+      doc.setFillColor(43, 83, 194); doc.rect(L, yy + 24, 0.9, 5 + lines.length * 4, 'F');
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(...ink);
+      doc.text(lines, L + 4, yy + 28.5);
+    }
+  });
+  // anything beyond the picture limit as a table
+  if (list.length > LIMIT) {
+    doc.addPage();
+    text(`MORE CLASHES (${list.length - LIMIT})`, L, 20, { size: 11, bold: true });
+    let y = 28;
+    for (const c of list.slice(LIMIT)) {
+      if (y > 280) { doc.addPage(); y = 20; }
+      text(c.id, L, y, { size: 8.5, bold: true });
+      text(c.status, L + 18, y, { size: 8.5, color: hexRgb(statusColor(c.status)) });
+      text(`${c.a.name} × ${c.b.name}`, L + 40, y, { size: 8.5, w: 105 });
+      text(c.storey, L + 148, y, { size: 8.5, w: 22 });
+      text(`${Math.round(c.dist * 1000)} mm`, R, y, { size: 8.5, align: 'right' });
+      doc.setDrawColor(...line); doc.line(L, y + 2, R, y + 2);
+      y += 6;
+    }
+  }
+  pdfFooter(doc, t.name);
+  doc.save(clashFileName('pdf'));
+  hideBusy();
+  toast(`Clash report saved with ${Math.min(list.length, LIMIT)} pictures.`);
+}
+
+/* ---------- snapshots ---------- */
+const snaps = [];
+let snapSeq = 0;
+const SNAP_STAMP = true;
+function viewDescription() {
+  if (state.clashFocus) return `Clash ${state.clashFocus.id} · ${[state.clashFocus.a.ifcClass, state.clashFocus.b.ifcClass].map((x) => x.replace(/^Ifc/, '')).sort().join(' × ')}`;
+  const on = cuts.filter((c) => c.on);
+  if (on.length) return on.map((c) => (c.kind === 'box' ? c.name : `${c.name} ${cutPosition(c.faces[0])}`)).join(' · ');
+  if (state.isolated) return `${state.isolated.size} isolated element${state.isolated.size > 1 ? 's' : ''}`;
+  return '3D view';
+}
+// Render the current view at high resolution and stamp a small title block on it.
+function renderSnapshot(name) {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  const prev = renderer.getPixelRatio();
+  const pr = Math.min(3, Math.max(prev, 2400 / w));
+  renderer.setPixelRatio(pr);
+  renderer.setSize(w, h);
+  const gz = gizmos.visible;
+  gizmos.visible = false;
+  renderer.render(scene, camera);
+  const W = renderer.domElement.width, H = renderer.domElement.height;
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const g = cv.getContext('2d');
+  g.drawImage(renderer.domElement, 0, 0);
+  gizmos.visible = gz;
+  renderer.setPixelRatio(prev);
+  renderer.setSize(w, h);
+  if (SNAP_STAMP) {
+    const s = W / 1400;
+    const lines = [
+      [liveFiles().length > 1 ? `${liveFiles()[0].name} + ${liveFiles().length - 1}` : liveFiles()[0].name, `600 ${22 * s}px "Barlow Condensed", "Arial Narrow", sans-serif`, '#1b221f'],
+      [`${name} · ${viewDescription()}`, `500 ${13 * s}px "IBM Plex Sans", system-ui, sans-serif`, '#1b221f'],
+      [new Date().toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' · Sightline', `400 ${11 * s}px "IBM Plex Mono", ui-monospace, monospace`, '#57615b'],
+    ];
+    const pad = 12 * s, gap = 6 * s;
+    let bw = 0;
+    for (const [txt, font] of lines) { g.font = font; bw = Math.max(bw, g.measureText(txt).width); }
+    bw += pad * 2;
+    const lh = [24, 16, 14].map((v) => v * s);
+    const bh = pad * 2 + lh.reduce((a, b) => a + b, 0) + gap;
+    const x = W - bw - 18 * s, y = H - bh - 18 * s;
+    g.fillStyle = 'rgba(255,255,255,0.94)';
+    g.fillRect(x, y, bw, bh);
+    g.lineWidth = 1.5 * s; g.strokeStyle = '#1b221f';
+    g.strokeRect(x, y, bw, bh);
+    g.fillStyle = '#2b53c2';
+    g.fillRect(x, y, 4 * s, bh);
+    let ty = y + pad;
+    lines.forEach(([txt, font, color], i) => {
+      g.font = font; g.fillStyle = color; g.textBaseline = 'top';
+      g.fillText(txt, x + pad, ty + (i === 1 ? gap : 0));
+      ty += lh[i] + (i === 1 ? gap : 0);
+    });
+  }
+  const thumb = document.createElement('canvas');
+  thumb.width = 360; thumb.height = Math.round((H / W) * 360);
+  thumb.getContext('2d').drawImage(cv, 0, 0, thumb.width, thumb.height);
+  return { full: cv, thumb: thumb.toDataURL('image/jpeg', 0.8) };
+}
+function takeSnapshot() {
+  if (!M) return;
+  const n = ++snapSeq;
+  const name = `Snapshot ${String(n).padStart(2, '0')}`;
+  const { full, thumb } = renderSnapshot(name);
+  const snap = {
+    id: n, name, thumb, w: full.width, h: full.height,
+    png: full.toDataURL('image/png'),
+    jpg: full.toDataURL('image/jpeg', 0.88),
+    cam: camera.position.clone(), target: controls.target.clone(),
+    view: viewDescription(), at: new Date(),
+  };
+  snaps.push(snap);
+  flashStage();
+  renderSnaps();
+  showSnapToast(snap);
+}
+function flashStage() {
+  if (reduceMotion) return;
+  const f = document.createElement('div');
+  f.className = 'snap-flash';
+  stage.appendChild(f);
+  setTimeout(() => f.remove(), 450);
+}
+const dataUrlBlob = async (url) => (await fetch(url)).blob();
+async function downloadSnap(s) {
+  downloadFile(`${reportBase()}-${s.name.replace(/[^\w.-]+/g, '_')}.png`, await dataUrlBlob(s.png), 'image/png');
+}
+async function copySnap(s) {
+  try {
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': dataUrlBlob(s.png) })]);
+    toast(`${s.name} copied. Paste it into an email, chat or document.`);
+  } catch {
+    toast('Your browser did not allow copying images. Use Download instead.', true);
+  }
+}
+let snapToastTimer;
+function showSnapToast(s) {
+  const el = $('#snapToast');
+  el.innerHTML = `<img src="${s.thumb}" alt=""><div><b>${esc(s.name)} saved</b><span>${esc(s.view)}</span></div>
+    <button class="btn small" data-st="dl">Download</button><button class="btn small" data-st="copy">Copy</button><button class="btn small" data-st="all">All snapshots</button>`;
+  el.hidden = false;
+  el.querySelector('[data-st="dl"]').onclick = () => downloadSnap(s);
+  el.querySelector('[data-st="copy"]').onclick = () => copySnap(s);
+  el.querySelector('[data-st="all"]').onclick = () => { el.hidden = true; toggleSnapTray(true); };
+  clearTimeout(snapToastTimer);
+  snapToastTimer = setTimeout(() => (el.hidden = true), 6000);
+}
+function renderSnaps() {
+  $('#btnSnaps').hidden = !snaps.length;
+  $('#snapCount').textContent = snaps.length;
+  const tray = $('#snapTray');
+  if (tray.hidden) return;
+  tray.innerHTML = `<div class="snap-head"><b>Snapshots</b><span class="muted">${snaps.length}</span>
+      <button class="btn small" id="snapPdf" ${snaps.length ? '' : 'disabled'}>Snapshot sheet (PDF)</button>
+      <button class="eye" id="snapClose" aria-label="Close snapshots">✕</button></div>
+    ${snaps.length ? `<div class="snap-grid">${snaps.map((s) => `<figure class="snap" data-id="${s.id}">
+      <button class="snap-img" data-sa="go" title="Go back to this view"><img src="${s.thumb}" alt="${esc(s.name)}"></button>
+      <figcaption><input value="${esc(s.name)}" data-sa="name" aria-label="Snapshot name"><span>${esc(s.view)}</span></figcaption>
+      <div class="snap-acts"><button class="btn small" data-sa="dl">PNG</button><button class="btn small" data-sa="copy">Copy</button><button class="eye" data-sa="del" aria-label="Delete ${esc(s.name)}">✕</button></div>
+    </figure>`).join('')}</div>` : '<p class="muted">No snapshots yet. Use the camera button to capture the view.</p>'}`;
+  $('#snapClose').onclick = () => toggleSnapTray(false);
+  $('#snapPdf').onclick = () => snapSheetPdf().catch(clashExportFailed);
+}
+function toggleSnapTray(open) {
+  const tray = $('#snapTray');
+  tray.hidden = open === undefined ? !tray.hidden : !open;
+  if (!tray.hidden) $('#snapToast').hidden = true;
+  $('#btnSnaps').setAttribute('aria-pressed', !tray.hidden);
+  renderSnaps();
+}
+$('#snapTray').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-sa]');
+  if (!b || b.dataset.sa === 'name') return;
+  const s = snaps.find((x) => x.id === +b.closest('.snap').dataset.id);
+  if (b.dataset.sa === 'go') flyTo(s.cam.clone(), s.target.clone());
+  if (b.dataset.sa === 'dl') downloadSnap(s);
+  if (b.dataset.sa === 'copy') copySnap(s);
+  if (b.dataset.sa === 'del') { snaps.splice(snaps.indexOf(s), 1); renderSnaps(); }
+});
+$('#snapTray').addEventListener('input', (e) => {
+  if (e.target.dataset.sa !== 'name') return;
+  snaps.find((x) => x.id === +e.target.closest('.snap').dataset.id).name = e.target.value;
+});
+$('#btnSnap').addEventListener('click', takeSnapshot);
+$('#btnSnaps').addEventListener('click', () => toggleSnapTray());
+window.addEventListener('keydown', (e) => {
+  if (e.target.matches('input, textarea, select') || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.key === 's' || e.key === 'S') takeSnapshot();
+});
+
+async function snapSheetPdf() {
+  const jsPDF = await getPdf();
+  showBusy('Writing the PDF…');
+  await nextFrame();
+  const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'landscape' });
+  const W = 297, H = 210, L = 14, CW = W - 28;
+  snaps.forEach((s, i) => {
+    if (i) doc.addPage();
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.setTextColor(22, 32, 27);
+    doc.text(pdfFit(doc, s.name, CW * 0.6), L, 18);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(90, 101, 94);
+    doc.text(pdfFit(doc, `${s.view} · ${s.at.toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`, CW * 0.4), W - L, 18, { align: 'right' });
+    const maxH = H - 24 - 18;
+    let iw = CW, ih = (s.h / s.w) * iw;
+    if (ih > maxH) { ih = maxH; iw = (s.w / s.h) * ih; }
+    doc.addImage(s.jpg, 'JPEG', L + (CW - iw) / 2, 24, iw, ih, undefined, 'FAST');
+    doc.setDrawColor(213, 219, 211); doc.setLineWidth(0.2); doc.rect(L + (CW - iw) / 2, 24, iw, ih);
+  });
+  pdfFooter(doc, `${liveFiles()[0].name} · snapshots`);
+  doc.save(`${reportBase()}-snapshots.pdf`);
+  hideBusy();
+  toast(`Saved ${snaps.length} snapshot${snaps.length > 1 ? 's' : ''} as a PDF.`);
+}
 
 /* ---------- panels (narrow screens) ---------- */
 function closePanels() {
