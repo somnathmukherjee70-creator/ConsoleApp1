@@ -68,9 +68,19 @@ namespace RevitGeoExport
 
             var written = new List<string>();
             KmlResult kml = null;
+            GlbResult glb = null;
             try
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(settings.OutputBasePath)));
+                if (settings.WriteGlb)
+                {
+                    string glbPath = settings.OutputBasePath + GlbSuffix;
+                    written.Add(Write(glbPath, p => glb = GlbWriter.Write(p, placement, meshes, options)));
+                    // Earth Web asks where to put the model; keep the answers next to it.
+                    written.Add(Write(settings.OutputBasePath + "_GoogleEarthWeb_3D_placement.txt",
+                        p => File.WriteAllText(p, glb.Instructions(Path.GetFileName(glbPath)))));
+                }
+
                 if (settings.WriteKmz)
                 {
                     // Earth Web only accepts simple shapes, so it gets a massing model; Earth Pro gets full 3D.
@@ -90,10 +100,11 @@ namespace RevitGeoExport
                 return Result.Failed;
             }
 
-            ShowResult(meshes, view, placement, kml, written);
+            ShowResult(meshes, view, placement, kml, glb, written);
             return Result.Succeeded;
         }
 
+        private const string GlbSuffix = "_GoogleEarthWeb_3D.glb";
         private const string WebKmzSuffix = "_GoogleEarthWeb.kmz";
         private const string ProKmzSuffix = "_GoogleEarthPro_3D.kmz";
 
@@ -123,16 +134,18 @@ namespace RevitGeoExport
             }
         }
 
-        private static void ShowResult(List<GeoMesh> meshes, View3D view, IGeoPlacement placement, KmlResult kml, List<string> written)
+        private static void ShowResult(List<GeoMesh> meshes, View3D view, IGeoPlacement placement, KmlResult kml, GlbResult glb, List<string> written)
         {
             string trimmed = kml != null && kml.Omitted > 0
                 ? $"The 3D KMZ leaves out the {kml.Omitted:N0} smallest elements so Google Earth can open it; the web map has them all.\n"
                 : "";
+            string model = glb == null ? "" : glb.Instructions(Path.GetFileName(written.First(p => p.EndsWith(GlbSuffix, StringComparison.OrdinalIgnoreCase)))) + "\n\n";
             var dialog = new TaskDialog("Place model on map")
             {
                 MainInstruction = $"Exported {meshes.Count:N0} elements",
                 MainContent = (view != null ? $"Source: 3D view \"{view.Name}\".\n" : "Source: whole model (open a 3D view to export only what it shows).\n")
-                    + placement.Description + ".\n"
+                    + placement.Description + ".\n\n"
+                    + model
                     + trimmed
                     + string.Join("\n", written),
             };

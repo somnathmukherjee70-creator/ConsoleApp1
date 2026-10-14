@@ -9,6 +9,7 @@ It adds a **Place on Map** button to the **Add-Ins** tab. Clicking it exports:
 
 | File | Open it with | What you get |
 | --- | --- | --- |
+| `<name>_GoogleEarthWeb_3D.glb` | earth.google.com › New project › Import › 3D model, then type the latitude/longitude from `<name>_GoogleEarthWeb_3D_placement.txt` | **The real architecture in Earth Web**: the full 3D model, coloured per category, turned to true north. Earth Web's 3D model import is marked experimental by Google |
 | `<name>_GoogleEarthWeb.kmz` | earth.google.com › Projects › Import KML file, or Google Earth mobile | A massing model: each element's outline extruded to its height. Earth Web only accepts simple shapes like these |
 | `<name>_GoogleEarthPro_3D.kmz` | Google Earth Pro (double-click) | The full 3D model, coloured per category, in one folder per category |
 | `<name>_map.html` | Any browser (double-click) | A live 3D map on satellite or street imagery. No server or API key needed |

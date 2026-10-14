@@ -34,6 +34,9 @@ namespace RevitGeoExport.Core
         public int MaxKmlPoints { get; set; } = 300_000;
 
         public KmlMode KmlMode { get; set; } = KmlMode.Detailed3D;
+
+        /// <summary>Most triangles written to a GLB model; the smallest elements go first. 0 means no limit.</summary>
+        public int MaxModelTriangles { get; set; } = 1_500_000;
     }
 
     /// <summary>Resolves a mesh vertex height to the altitude written to the map.</summary>

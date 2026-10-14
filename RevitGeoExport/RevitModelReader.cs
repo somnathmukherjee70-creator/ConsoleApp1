@@ -345,6 +345,20 @@ namespace RevitGeoExport
             var outer = rings.OrderByDescending(r => Math.Abs(Area(r, normal))).First();
             var holes = rings.Where(r => r != outer).Select(r => r.Select(toLocal).ToList()).ToList();
             target.AddPolygon(new GeoPolygon(outer.Select(toLocal).ToList(), holes));
+
+            // The 3D model (GLB) takes triangles only, so keep the face's triangulation too.
+            var mesh = face.Triangulate();
+            if (mesh != null)
+            {
+                for (int i = 0; i < mesh.NumTriangles; i++)
+                {
+                    var triangle = mesh.get_Triangle(i);
+                    target.PolygonTriangles.Add(toLocal(triangle.get_Vertex(0)));
+                    target.PolygonTriangles.Add(toLocal(triangle.get_Vertex(1)));
+                    target.PolygonTriangles.Add(toLocal(triangle.get_Vertex(2)));
+                }
+            }
+
             return true;
         }
 

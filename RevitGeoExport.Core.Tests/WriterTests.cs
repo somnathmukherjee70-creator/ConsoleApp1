@@ -230,3 +230,57 @@ public class KmlSizeTests
         Assert.Equal("30", Assert.Single(heights));
     }
 }
+
+public class GlbWriterTests
+{
+    private static (System.Text.Json.JsonDocument Json, byte[] Bin) Read(byte[] glb)
+    {
+        Assert.Equal(0x46546C67u, BitConverter.ToUInt32(glb, 0));
+        Assert.Equal(2u, BitConverter.ToUInt32(glb, 4));
+        Assert.Equal((uint)glb.Length, BitConverter.ToUInt32(glb, 8));
+        int jsonLength = (int)BitConverter.ToUInt32(glb, 12);
+        Assert.Equal(0x4E4F534Au, BitConverter.ToUInt32(glb, 16));
+        var json = System.Text.Json.JsonDocument.Parse(Encoding.UTF8.GetString(glb, 20, jsonLength));
+        int binStart = 20 + jsonLength;
+        int binLength = (int)BitConverter.ToUInt32(glb, binStart);
+        Assert.Equal(0x004E4942u, BitConverter.ToUInt32(glb, binStart + 4));
+        return (json, glb.Skip(binStart + 8).Take(binLength).ToArray());
+    }
+
+    [Fact]
+    public void Model_is_centred_on_its_location_with_north_along_minus_z()
+    {
+        // A 10 m wide, 20 m deep (north), 6 m tall wall pair in UTM 45N, 2 m above the datum.
+        double e = 638053.3884, n = 2493751.7931;
+        var walls = new GeoMesh("1", "Wall", "Walls");
+        walls.AddTriangle(new Vec3(e - 5, n - 10, 2), new Vec3(e + 5, n - 10, 2), new Vec3(e + 5, n - 10, 8));
+        walls.AddTriangle(new Vec3(e - 5, n + 10, 2), new Vec3(e + 5, n + 10, 2), new Vec3(e - 5, n + 10, 8));
+        var glass = new GeoMesh("2", "Window", "Windows");
+        glass.AddPolygon(new GeoPolygon(new List<Vec3> { new(e, n, 3), new(e + 1, n, 3), new(e + 1, n, 4) }));
+        glass.PolygonTriangles.AddRange(new[] { new Vec3(e, n, 3), new Vec3(e + 1, n, 3), new Vec3(e + 1, n, 4) });
+
+        using var stream = new MemoryStream();
+        var result = GlbWriter.Write(stream, new ProjectedPlacement(ProjectedCrs.Utm(45, false)), new[] { walls, glass }, new ExportOptions());
+        var (json, bin) = Read(stream.ToArray());
+
+        Assert.Equal(22.544808, result.Latitude, 6);
+        Assert.Equal(88.342558, result.Longitude, 6);
+        Assert.Equal(3, result.Triangles);
+
+        var root = json.RootElement;
+        Assert.Equal(2, root.GetProperty("meshes").GetArrayLength());
+        var wallAccessor = root.GetProperty("accessors")[0]; // categories sorted: Walls, Windows
+        Assert.Equal(6, wallAccessor.GetProperty("count").GetInt32());
+        var min = wallAccessor.GetProperty("min").EnumerateArray().Select(x => x.GetDouble()).ToArray();
+        var max = wallAccessor.GetProperty("max").EnumerateArray().Select(x => x.GetDouble()).ToArray();
+        // UTM grid north is ~0.5° off true north here; the model is turned to true north, which moves
+        // the 20 m-long sides' ends by up to ~9 cm east-west.
+        Assert.InRange(min[0], -5.15, -4.85); Assert.InRange(max[0], 4.85, 5.15);   // east
+        Assert.Equal(0, min[1], 3); Assert.Equal(6, max[1], 2);                       // up, lowest point on the ground
+        Assert.InRange(min[2], -10.05, -9.95); Assert.InRange(max[2], 9.95, 10.05);  // north is -Z
+
+        Assert.Equal((3 + 6) * 12, root.GetProperty("buffers")[0].GetProperty("byteLength").GetInt32());
+        Assert.True(bin.Length >= (3 + 6) * 12);
+        Assert.Equal("BLEND", root.GetProperty("materials")[1].GetProperty("alphaMode").GetString());
+    }
+}

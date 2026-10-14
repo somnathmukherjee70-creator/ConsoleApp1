@@ -59,7 +59,16 @@ namespace RevitGeoExport.Core
         /// <summary>Flat faces kept whole (with holes) instead of triangulated; far smaller in KML.</summary>
         public List<GeoPolygon> Polygons { get; } = new List<GeoPolygon>();
 
+        /// <summary>
+        /// Triangles covering <see cref="Polygons"/>, three points each, for formats that only take
+        /// triangles (GLB). KML writes the polygons themselves instead.
+        /// </summary>
+        public List<Vec3> PolygonTriangles { get; } = new List<Vec3>();
+
         public bool IsEmpty => Indices.Count == 0 && Polygons.Count == 0;
+
+        /// <summary>Triangles a 3D model of this element has: its own plus those covering its polygons.</summary>
+        public int ModelTriangleCount => TriangleCount + PolygonTriangles.Count / 3;
 
         /// <summary>How many coordinates this element writes to KML: the measure of its file size.</summary>
         public int KmlPointCount => TriangleCount * 4 + Polygons.Sum(p => p.Outer.Count + 1 + p.Holes.Sum(h => h.Count + 1));

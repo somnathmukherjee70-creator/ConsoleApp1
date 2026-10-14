@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -69,19 +70,22 @@ namespace RevitGeoExport.Core
         }
 
         /// <summary>Keeps the largest elements that fit the point budget, so the building's shape survives.</summary>
-        internal static List<GeoMesh> WithinBudget(IReadOnlyCollection<GeoMesh> meshes, int maxPoints)
+        internal static List<GeoMesh> WithinBudget(IReadOnlyCollection<GeoMesh> meshes, int maxPoints) =>
+            WithinBudget(meshes, maxPoints, m => m.KmlPointCount);
+
+        internal static List<GeoMesh> WithinBudget(IReadOnlyCollection<GeoMesh> meshes, int max, Func<GeoMesh, int> cost)
         {
-            if (maxPoints <= 0 || meshes.Sum(m => (long)m.KmlPointCount) <= maxPoints)
+            if (max <= 0 || meshes.Sum(m => (long)cost(m)) <= max)
                 return meshes.ToList();
 
             var kept = new List<GeoMesh>();
             long used = 0;
             foreach (var mesh in meshes.OrderByDescending(Size))
             {
-                if (used + mesh.KmlPointCount > maxPoints)
+                if (used + cost(mesh) > max)
                     continue;
                 kept.Add(mesh);
-                used += mesh.KmlPointCount;
+                used += cost(mesh);
             }
 
             return kept;

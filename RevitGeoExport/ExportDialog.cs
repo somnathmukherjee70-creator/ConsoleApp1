@@ -19,6 +19,7 @@ namespace RevitGeoExport
         public double SiteElevationMeters { get; set; }
         public double OffsetMeters { get; set; }
         public bool WriteKmz { get; set; } = true;
+        public bool WriteGlb { get; set; } = true;
         public bool WriteGeoJson { get; set; } = true;
         public bool WriteWebMap { get; set; } = true;
         public bool SaveLocationToProject { get; set; }
@@ -42,6 +43,7 @@ namespace RevitGeoExport
         private readonly ComboBox _altitude = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 260 };
         private readonly NumericUpDown _elevation = Number(-500, 9000, 2);
         private readonly NumericUpDown _offset = Number(-1000, 1000, 2);
+        private readonly CheckBox _glb = new CheckBox { Text = "Google Earth Web 3D model (.glb, real architecture)", AutoSize = true, Checked = true };
         private readonly CheckBox _kmz = new CheckBox { Text = "Google Earth (.kmz, for Web and Pro)", AutoSize = true, Checked = true };
         private readonly CheckBox _geoJson = new CheckBox { Text = "GeoJSON footprints (.geojson)", AutoSize = true, Checked = true };
         private readonly CheckBox _webMap = new CheckBox { Text = "Live web map (.html)", AutoSize = true, Checked = true };
@@ -87,7 +89,7 @@ namespace RevitGeoExport
             AddRow(grid, "Height of Z = 0 above sea (m)", _elevation);
             AddRow(grid, "Vertical offset (m)", _offset);
             AddRow(grid, "Include", _content);
-            AddRow(grid, "Export", Stack(_kmz, _geoJson, _webMap));
+            AddRow(grid, "Export", Stack(_glb, _kmz, _geoJson, _webMap));
             AddRow(grid, "Save to (no extension)", Stack(_output, browse));
             AddRow(grid, "", _save);
 
@@ -140,7 +142,7 @@ namespace RevitGeoExport
                 return;
             }
 
-            if (!(_kmz.Checked || _geoJson.Checked || _webMap.Checked) || string.IsNullOrWhiteSpace(_output.Text))
+            if (!(_glb.Checked || _kmz.Checked || _geoJson.Checked || _webMap.Checked) || string.IsNullOrWhiteSpace(_output.Text))
             {
                 MessageBox.Show(this, "Pick at least one format and an output location.", Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 DialogResult = DialogResult.None;
@@ -158,6 +160,7 @@ namespace RevitGeoExport
                 SiteElevationMeters = (double)_elevation.Value,
                 OffsetMeters = (double)_offset.Value,
                 WriteKmz = _kmz.Checked,
+                WriteGlb = _glb.Checked,
                 WriteGeoJson = _geoJson.Checked,
                 WriteWebMap = _webMap.Checked,
                 SaveLocationToProject = _save.Checked,
@@ -191,7 +194,7 @@ namespace RevitGeoExport
         private static string StripExtension(string path)
         {
             var ext = Path.GetExtension(path).ToLowerInvariant();
-            return ext == ".kmz" || ext == ".kml" || ext == ".geojson" || ext == ".html"
+            return ext == ".kmz" || ext == ".kml" || ext == ".geojson" || ext == ".html" || ext == ".glb"
                 ? Path.Combine(Path.GetDirectoryName(path) ?? "", Path.GetFileNameWithoutExtension(path))
                 : path;
         }
