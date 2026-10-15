@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RevitAddIns>
+  <AddIn Type="Application">
+    <Name>Revit Copilot</Name>
+    <Assembly>RevitCopilot\RevitCopilot.dll</Assembly>
+    <AddInId>6F1C2E54-8D3B-4B8A-9C55-2E7A0D4B9A11</AddInId>
+    <FullClassName>RevitCopilot.App</FullClassName>
+    <VendorId>RCPL</VendorId>
+    <VendorDescription>Revit Copilot - AI assistant inside Revit</VendorDescription>
+  </AddIn>
+  <!-- Load the copilot in its own assembly context (Revit 2026+) so its newer
+       dependencies (System.Text.Json 10, Anthropic SDK) don't clash with Revit's or other add-ins'. -->
+  <ManifestSettings>
+    <UseRevitContext>False</UseRevitContext>
+    <ContextName>RevitCopilot</ContextName>
+  </ManifestSettings>
+</RevitAddIns>
