@@ -15,11 +15,12 @@ public sealed class CopilotPane : UserControl, ICopilotHost
     private static readonly string[] Examples =
     [
         "Give me an overview of this model",
-        "How many doors are on Level 1, by type?",
-        "List rooms smaller than 10 m²",
-        "Set Comments to 'Check' on the selected elements",
-        "Draw a 6 x 4 m rectangle of walls on Level 1 starting at 0,0",
-        "Create sheets A101 to A105 named Floor Plan 1-5",
+        "Colour the columns in this view by type",
+        "Create a filter for concrete columns and beams and show them orange",
+        "Select all beams longer than 6 m on Level 2",
+        "Add a text parameter 'Concrete Grade' to structural columns and beams",
+        "Set Concrete Grade to M30 on all columns on Level 1",
+        "Number the selected columns C1, C2, C3… by Mark",
     ];
 
     private readonly CopilotAgent _agent;

@@ -4,6 +4,12 @@ An AI partner that lives inside Autodesk Revit. Open the **AI Copilot → Copilo
 instruction in plain language, and the copilot inspects or changes the open model for you.
 
 ```
+You:      Colour the columns in this view by type
+Copilot:  → find_elements → color_elements   Coloured 42 columns: 300x300 red (18), 400x400 blue (16), 450x600 green (8).
+You:      Make a filter for concrete beams deeper than 600 mm and hide them
+Copilot:  → create_view_filter   Filter "Deep Concrete Beams" applied to Level 2 plan — 11 beams hidden.
+You:      Add a "Concrete Grade" parameter to columns and beams, set M30 on Level 1 columns
+Copilot:  → create_parameter → find_elements → set_parameter   Done: parameter added, 18 columns set to M30.
 You:      How many doors are on Level 1, by type?
 Copilot:  → find_elements …  Level 1 has 24 doors: 16 × Single-Flush 900x2100, 8 × Double-Glass 1800x2100.
 You:      Set Comments to "Fire check" on the double-glass ones
@@ -31,9 +37,18 @@ Copilot:  [asks you to approve]  → set_parameter …  Done: 8 doors updated (C
 
 ### Built-in tools
 
-| Read the model | Change the model (asks first) |
+| What | Tools |
 |---|---|
-| `get_model_info`, `get_selection`, `list_levels`, `count_elements`, `find_elements`, `get_element_parameters`, `list_rooms`, `list_views`, `list_sheets`, `list_types`, `select_elements` | `set_parameter`, `create_walls`, `create_level`, `create_sheets`, `rename_views`, `delete_elements` |
+| Read the model | `get_model_info`, `get_selection`, `list_levels`, `count_elements`, `get_element_parameters`, `list_rooms`, `list_views`, `list_sheets`, `list_types` |
+| Find & select | `find_elements`: several categories at once, active view only, by level, with rules such as *Structural Material contains Concrete* or *Length greater than 6 m*. `select_elements` selects and zooms to elements. |
+| Parameters ✱ | `create_parameter` adds a new text/number/length/area/yes-no parameter to categories. `set_parameter` gives many elements one value; `set_parameter_values` gives each element its own value (numbering, copying). |
+| Colour & filter the view ✱ | `color_elements` colours elements with one colour, or by parameter value with a legend. `create_view_filter` makes a reusable Revit view filter with a rule, colour or hide. `clear_colors` removes colours. `isolate_in_view` does temporary isolate or hide. |
+| Create & edit ✱ | `create_walls`, `create_level`, `create_sheets`, `rename_views`, `delete_elements` |
+
+✱ = asks for your approval first (except temporary isolate/hide).
+
+`create_parameter` stores its definitions in `%AppData%\RevitCopilot\SharedParameters.txt`, so your
+own shared parameter file is never touched.
 
 Lengths are in metres and areas in m² between the AI and the tools.
 

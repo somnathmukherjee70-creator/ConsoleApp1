@@ -3,6 +3,7 @@ using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Architecture;
 using Autodesk.Revit.UI;
 using static RevitCopilot.Tools.Json;
+using static RevitCopilot.Tools.RevitHelpers;
 
 namespace RevitCopilot.Tools;
 
@@ -22,6 +23,9 @@ public sealed class ToolRegistry
 
     public static ToolRegistry CreateDefault() => new(
     [
+        .. ParameterTools.All,
+        .. ViewTools.All,
+
         // ---------- Read-only: look at the model ----------
         new("get_model_info",
             "Overview of the open Revit model: title, file path, active view, project length unit, and counts of levels, views, sheets, rooms and walls. Call this first when you need context.",
@@ -86,31 +90,40 @@ public sealed class ToolRegistry
             }),
 
         new("find_elements",
-            "Find element instances of a category, optionally filtered by level name and/or a parameter whose value contains some text. Returns id, name, type and level so the ids can be used with other tools.",
+            "Find element instances of one or more categories (e.g. columns AND beams), optionally only in the active view, on a level, and/or where a parameter matches a rule (e.g. 'Structural Material' contains 'Concrete', or 'Length' greater '6 m'). Returns id, name, type and level; set select=true to also select them in Revit.",
             new
             {
-                category = S("Revit category name, e.g. 'Walls'."),
+                categories = new { type = "array", items = new { type = "string" }, description = "Category names, e.g. ['Structural Columns', 'Structural Framing']." },
                 level = S("Only elements on this level (exact level name). Optional."),
-                parameter_name = S("Filter by this parameter. Optional."),
-                parameter_value = S("Text the parameter value must contain (case-insensitive). Optional."),
-                limit = I("Maximum results, default 100."),
+                in_active_view = new { type = "boolean", description = "Only elements visible in the active view. Default false." },
+                parameter_name = S("Parameter to test (instance first, then type). Optional."),
+                @operator = new { type = "string", @enum = Operators, description = "Default 'contains'." },
+                parameter_value = S("Value to compare with; may include units, e.g. '450 mm'."),
+                select = new { type = "boolean", description = "Select the results in Revit. Default false." },
+                limit = I("Maximum results listed, default 100."),
             },
-            ["category"], false, (app, input) =>
+            ["categories"], false, (app, input) =>
             {
                 Document doc = Doc(app);
-                IEnumerable<Element> found = Instances(doc, FindCategory(doc, input.Str("category")));
+                bool inView = input.TryGetProperty("in_active_view", out var iv) && iv.ValueKind == JsonValueKind.True;
+                IEnumerable<Element> found = Instances(doc, Categories(doc, input), inView ? doc.ActiveView : null);
                 if (input.OptStr("level") is { } levelName)
                 {
                     ElementId levelId = FindLevel(doc, levelName).Id;
-                    found = found.Where(e => e.LevelId == levelId);
+                    // Columns keep their level in "Base Level", beams in "Reference Level".
+                    found = found.Where(e => e.LevelId == levelId
+                        || e.get_Parameter(BuiltInParameter.FAMILY_BASE_LEVEL_PARAM)?.AsElementId() == levelId
+                        || e.get_Parameter(BuiltInParameter.INSTANCE_REFERENCE_LEVEL_PARAM)?.AsElementId() == levelId);
                 }
                 if (input.OptStr("parameter_name") is { } pName)
                 {
+                    string op = input.OptStr("operator") ?? "contains";
                     string want = input.OptStr("parameter_value") ?? "";
-                    found = found.Where(e => e.LookupParameter(pName) is { } p &&
-                        (ParamValue(p) ?? "").Contains(want, StringComparison.OrdinalIgnoreCase));
+                    found = found.Where(e => Matches(doc, FindParam(doc, e, pName), op, want));
                 }
                 var list = found.ToList();
+                if (input.TryGetProperty("select", out var sel) && sel.ValueKind == JsonValueKind.True)
+                    app.ActiveUIDocument.Selection.SetElementIds(list.Select(e => e.Id).ToList());
                 int limit = input.OptInt("limit", 100);
                 return Result(new { total = list.Count, truncated = list.Count > limit, elements = list.Take(limit).Select(e => Summary(doc, e)) });
             }),
@@ -339,111 +352,4 @@ public sealed class ToolRegistry
                 return Result(new { deleted_count = deleted.Count, deleted_ids = deleted.Select(i => i.Value), warnings });
             }),
     ]);
-
-    // ---------- helpers ----------
-
-    private static Document Doc(UIApplication app) =>
-        app.ActiveUIDocument?.Document ?? throw new InvalidOperationException("No Revit model is open.");
-
-    private static IEnumerable<Element> Instances(Document doc, Category cat) =>
-        new FilteredElementCollector(doc).OfCategoryId(cat.Id).WhereElementIsNotElementType().ToElements();
-
-    private static Category FindCategory(Document doc, string name)
-    {
-        foreach (Category c in doc.Settings.Categories)
-            if (c.Name.Equals(name, StringComparison.OrdinalIgnoreCase) || c.Name.Equals(name + "s", StringComparison.OrdinalIgnoreCase))
-                return c;
-        throw new ArgumentException($"No category named '{name}'. Call count_elements without a category to see category names.");
-    }
-
-    private static Level FindLevel(Document doc, string name) =>
-        new FilteredElementCollector(doc).OfClass(typeof(Level)).Cast<Level>()
-            .FirstOrDefault(l => l.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
-        ?? throw new ArgumentException($"No level named '{name}'. Call list_levels to see level names.");
-
-    private static T FindType<T>(Document doc, string? name, ElementTypeGroup fallback) where T : ElementType
-    {
-        if (name is null) return (T)doc.GetElement(doc.GetDefaultElementTypeId(fallback));
-        return new FilteredElementCollector(doc).OfClass(typeof(T)).Cast<T>()
-                   .FirstOrDefault(t => t.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
-               ?? new FilteredElementCollector(doc).OfClass(typeof(T)).Cast<T>()
-                   .FirstOrDefault(t => t.Name.Contains(name, StringComparison.OrdinalIgnoreCase))
-               ?? throw new ArgumentException($"No {typeof(T).Name} matching '{name}'. Call list_types to see options.");
-    }
-
-    private static object Summary(Document doc, Element e) => new
-    {
-        id = e.Id.Value,
-        category = e.Category?.Name,
-        name = e.Name,
-        type = doc.GetElement(e.GetTypeId())?.Name,
-        level = e.LevelId != ElementId.InvalidElementId ? doc.GetElement(e.LevelId)?.Name : null,
-    };
-
-    private static string? ParamValue(Parameter p) => p.StorageType switch
-    {
-        StorageType.String => p.AsString(),
-        StorageType.ElementId => p.AsValueString() ?? p.AsElementId().Value.ToString(),
-        _ => p.AsValueString() ?? (p.StorageType == StorageType.Integer ? p.AsInteger().ToString() : p.AsDouble().ToString()),
-    };
-
-    private static void SetParam(Parameter p, string value)
-    {
-        if (p.IsReadOnly) throw new InvalidOperationException($"'{p.Definition.Name}' is read-only.");
-        bool ok = p.StorageType switch
-        {
-            StorageType.String => p.Set(value),
-            StorageType.Double => p.SetValueString(value) || (double.TryParse(value, out double d) && p.Set(d)),
-            StorageType.Integer => value.Trim().ToLowerInvariant() switch
-            {
-                "yes" or "true" => p.Set(1),
-                "no" or "false" => p.Set(0),
-                _ => int.TryParse(value, out int i) ? p.Set(i) : p.SetValueString(value),
-            },
-            StorageType.ElementId => long.TryParse(value, out long id) && p.Set(new ElementId(id)),
-            _ => false,
-        };
-        if (!ok) throw new ArgumentException($"Revit rejected value '{value}' for '{p.Definition.Name}'.");
-    }
-
-    /// <summary>
-    /// Runs <paramref name="work"/> in one named transaction (one Ctrl+Z step). Revit warnings are
-    /// collected and returned instead of popping dialogs that would block the copilot.
-    /// </summary>
-    private static string InTransaction(Document doc, string name, Action work)
-    {
-        using var t = new Transaction(doc, "Copilot: " + name);
-        var collector = new WarningCollector();
-        FailureHandlingOptions options = t.GetFailureHandlingOptions();
-        options.SetFailuresPreprocessor(collector);
-        t.SetFailureHandlingOptions(options);
-        t.Start();
-        try
-        {
-            work();
-            if (t.Commit() != TransactionStatus.Committed)
-                throw new InvalidOperationException("Revit could not commit the change: " + string.Join("; ", collector.Messages));
-        }
-        catch
-        {
-            if (t.GetStatus() == TransactionStatus.Started) t.RollBack();
-            throw;
-        }
-        return string.Join("; ", collector.Messages);
-    }
-
-    private sealed class WarningCollector : IFailuresPreprocessor
-    {
-        public List<string> Messages { get; } = [];
-
-        public FailureProcessingResult PreprocessFailures(FailuresAccessor accessor)
-        {
-            foreach (FailureMessageAccessor f in accessor.GetFailureMessages())
-            {
-                Messages.Add(f.GetDescriptionText());
-                if (f.GetSeverity() == FailureSeverity.Warning) accessor.DeleteWarning(f);
-            }
-            return FailureProcessingResult.Continue;
-        }
-    }
 }
